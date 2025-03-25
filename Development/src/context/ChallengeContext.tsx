@@ -1,7 +1,8 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useState, ReactNode, useEffect } from 'react';
 import { useAuth } from './AuthContext';
+import { setUserData, getUserData } from '../utils/localStorage';
 
-interface Challenge {
+export interface Challenge {
   id: string;
   title: string;
   description: string;
@@ -15,8 +16,16 @@ interface Challenge {
   tips: string[];
   emoji: string;
   color: string;
-  startDate: Date;
-  endDate: Date;
+  startDate: string;
+  endDate: string;
+}
+
+export interface ChallengeEntry {
+  challengeId: string;
+  userId: string;
+  submittedAt: string;
+  photo: string;
+  description: string;
 }
 
 interface ChallengeContextType {
@@ -25,10 +34,12 @@ interface ChallengeContextType {
   joinChallenge: (challengeId: string) => Promise<void>;
   leaveChallenge: (challengeId: string) => Promise<void>;
   submitChallengeEntry: (challengeId: string, entry: { photo: string; description: string }) => Promise<void>;
+  challengeEntries: ChallengeEntry[];
 }
 
 const ChallengeContext = createContext<ChallengeContextType | undefined>(undefined);
 
+// Sample challenges for development
 const sampleChallenges: Challenge[] = [
   {
     id: 'weekly-knife-skills',
@@ -52,8 +63,8 @@ const sampleChallenges: Challenge[] = [
     ],
     emoji: '🔪',
     color: 'bg-blue-500',
-    startDate: new Date(),
-    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000) // 1 week from now
+    startDate: new Date().toISOString(),
+    endDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // 1 week from now
   },
   {
     id: 'perfect-pasta',
@@ -77,8 +88,8 @@ const sampleChallenges: Challenge[] = [
     ],
     emoji: '🍝',
     color: 'bg-yellow-500',
-    startDate: new Date(),
-    endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000) // 2 weeks from now
+    startDate: new Date().toISOString(),
+    endDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() // 2 weeks from now
   }
 ];
 
@@ -86,32 +97,67 @@ export const ChallengeProvider: React.FC<{ children: ReactNode }> = ({ children 
   const { user } = useAuth();
   const [activeChallenges, setActiveChallenges] = useState<Challenge[]>(sampleChallenges);
   const [joinedChallenges, setJoinedChallenges] = useState<string[]>([]);
+  const [challengeEntries, setChallengeEntries] = useState<ChallengeEntry[]>([]);
 
-  const joinChallenge = async (challengeId: string) => {
+  // Load challenge data when user changes
+  useEffect(() => {
+    if (user) {
+      const userJoinedChallenges = getUserData<string[]>(user.id, 'joinedChallenges', []);
+      const userChallengeEntries = getUserData<ChallengeEntry[]>(user.id, 'challengeEntries', []);
+      
+      setJoinedChallenges(userJoinedChallenges);
+      setChallengeEntries(userChallengeEntries);
+    } else {
+      // Reset state when user logs out
+      setJoinedChallenges([]);
+      setChallengeEntries([]);
+    }
+  }, [user]);
+
+  // Save challenge data when it changes
+  useEffect(() => {
+    if (user) {
+      setUserData(user.id, 'joinedChallenges', joinedChallenges);
+      setUserData(user.id, 'challengeEntries', challengeEntries);
+    }
+  }, [user, joinedChallenges, challengeEntries]);
+
+  const joinChallenge = async (challengeId: string): Promise<void> => {
     if (!user) {
       throw new Error('You must be logged in to join challenges');
     }
 
-    // Simulate an API call to join the challenge
-    setJoinedChallenges(prev => [...prev, challengeId]);
+    if (!joinedChallenges.includes(challengeId)) {
+      setJoinedChallenges(prev => [...prev, challengeId]);
+    }
   };
 
-  const leaveChallenge = async (challengeId: string) => {
+  const leaveChallenge = async (challengeId: string): Promise<void> => {
     if (!user) {
       throw new Error('You must be logged in to leave challenges');
     }
 
-    // Simulate an API call to leave the challenge
     setJoinedChallenges(prev => prev.filter(id => id !== challengeId));
   };
 
-  const submitChallengeEntry = async (challengeId: string, entry: { photo: string; description: string }) => {
+  const submitChallengeEntry = async (challengeId: string, entry: { photo: string; description: string }): Promise<void> => {
     if (!user) {
       throw new Error('You must be logged in to submit entries');
     }
 
-    // Simulate an API call to submit the entry
-    console.log('Submitting entry for challenge:', challengeId, entry);
+    if (!joinedChallenges.includes(challengeId)) {
+      throw new Error('You must join the challenge before submitting an entry');
+    }
+
+    const newEntry: ChallengeEntry = {
+      challengeId,
+      userId: user.id,
+      submittedAt: new Date().toISOString(),
+      photo: entry.photo,
+      description: entry.description
+    };
+
+    setChallengeEntries(prev => [...prev, newEntry]);
   };
 
   return (
@@ -121,7 +167,8 @@ export const ChallengeProvider: React.FC<{ children: ReactNode }> = ({ children 
         joinedChallenges,
         joinChallenge,
         leaveChallenge,
-        submitChallengeEntry
+        submitChallengeEntry,
+        challengeEntries
       }}
     >
       {children}

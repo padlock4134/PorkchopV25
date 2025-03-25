@@ -2,6 +2,18 @@ import React from 'react';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 
+export interface AuthContextType {
+  currentUser: {
+    firstName: string;
+    lastName: string;
+    email: string;
+    photoURL?: string;
+    createdAt?: string;
+  } | null;
+  logout: () => Promise<void>;
+  // Other properties
+}
+
 const ProfilePage: React.FC = () => {
   const { currentUser, logout } = useAuth();
   

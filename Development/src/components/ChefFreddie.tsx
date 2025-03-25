@@ -1,205 +1,243 @@
-import React, { useState, useEffect } from 'react';
-import { Recipe } from '../utils/recipeData';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import type { Recipe } from '../utils/recipeData';
 
-interface Timer {
-  id: string;
-  name: string;
-  duration: number;
-  remaining: number;
-  isRunning: boolean;
-}
-
-interface ChefFreddieProps {
-  selectedRecipe: Recipe | null;
+interface ChefFreddieContextType {
   isVisible: boolean;
-  onClose: () => void;
+  showChefFreddie: () => void;
+  hideChefFreddie: () => void;
+  currentRecipe: Recipe | null;
+  setCurrentRecipe: (recipe: Recipe | null) => void;
+  recommendedRecipe: Recipe | null;
+  setRecommendedRecipe: (recipe: Recipe | null) => void;
+  currentRoute: string;
+  getContextualHelp: () => string;
+  getRouteContext: () => RouteContext;
+  getRecipeContext: () => RecipeContext | null;
 }
 
-const ChefFreddie: React.FC<ChefFreddieProps> = ({ selectedRecipe, isVisible, onClose }) => {
-  const [customQuestion, setCustomQuestion] = useState('');
-  const [timers, setTimers] = useState<Timer[]>([]);
-  const [chefMessage, setChefMessage] = useState('');
+interface RouteContext {
+  description: string;
+  suggestedQuestions: string[];
+  features: {
+    name: string;
+    suggestedQuestions: string[];
+  }[];
+}
 
+interface RecipeContext {
+  suggestedQuestions: string[];
+}
+
+const ChefFreddieContext = createContext<ChefFreddieContextType | undefined>(undefined);
+
+export const ChefFreddieProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const router = useRouter();
+  const [isVisible, setIsVisible] = useState(false);
+  const [currentRecipe, setCurrentRecipe] = useState<Recipe | null>(null);
+  const [recommendedRecipe, setRecommendedRecipe] = useState<Recipe | null>(null);
+  const [currentRoute, setCurrentRoute] = useState('/');
+
+  // Update current route when navigation happens
   useEffect(() => {
-    // Update running timers every second
-    const interval = setInterval(() => {
-      setTimers(prevTimers => 
-        prevTimers.map(timer => {
-          if (!timer.isRunning) return timer;
-          const newRemaining = timer.remaining - 1;
-          if (newRemaining <= 0) {
-            // Timer completed
-            handleTimerComplete(timer);
-            return { ...timer, remaining: 0, isRunning: false };
-          }
-          return { ...timer, remaining: newRemaining };
-        })
-      );
-    }, 1000);
+    setCurrentRoute(router.pathname);
+  }, [router.pathname]);
 
-    return () => clearInterval(interval);
-  }, []);
+  const showChefFreddie = () => setIsVisible(true);
+  const hideChefFreddie = () => setIsVisible(false);
 
-  const handleTimerComplete = (timer: Timer) => {
-    setChefMessage(`Your ${timer.name} timer is done! 🔔`);
-    // You could add sound notification here
-  };
-
-  const startNewTimer = (name: string, minutes: number) => {
-    const duration = minutes * 60;
-    const newTimer: Timer = {
-      id: Date.now().toString(),
-      name,
-      duration,
-      remaining: duration,
-      isRunning: true
-    };
-    setTimers(prev => [...prev, newTimer]);
-    setChefMessage(`I'll keep an eye on your ${name} for ${minutes} minutes! 👨‍🍳`);
-  };
-
-  const formatTime = (seconds: number): string => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
-  };
-
-  const handleSubmitQuestion = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Check if it's a timer request
-    const timerMatch = customQuestion.match(/timer for (\d+)\s*(?:minute|min|m)/i);
-    if (timerMatch) {
-      const minutes = parseInt(timerMatch[1]);
-      startNewTimer('Custom Timer', minutes);
-    } else {
-      // Handle other questions (to be implemented)
-      setChefMessage("Let me help you with that! (Coming soon)");
+  const getContextualHelp = (): string => {
+    // If we have a current recipe or recommended recipe, prioritize that context
+    if (currentRecipe) {
+      return `Looking at ${currentRecipe.title}! This ${currentRecipe.difficulty} recipe takes about ${currentRecipe.cookingTime} minutes. Would you like cooking tips or ingredient substitutions?`;
     }
-    setCustomQuestion('');
+
+    if (recommendedRecipe) {
+      return `I've recommended ${recommendedRecipe.title} based on your preferences. Would you like to know more about it?`;
+    }
+
+    // Otherwise, return route-specific help
+    const routeHelpMap: Record<string, string> = {
+      '/': 'Welcome to the dashboard! Here you can explore recipes and manage your cooking journey.',
+      '/dashboard': 'Welcome to the dashboard! Here you can explore recipes and manage your cooking journey.',
+      '/create-recipe': 'Here you can create your own recipes. Add ingredients, steps, and more!',
+      '/my-cookbook': 'View and manage your saved recipes in your personal cookbook.',
+      '/butcher-shop': 'Explore and purchase ingredients from the butcher shop.',
+      '/chefs-corner': 'Join the community, share your passion, and grow as a chef!',
+      '/profile': 'Manage your profile, preferences, and account settings.',
+    };
+
+    return routeHelpMap[currentRoute] || 'Explore the app and discover new features!';
   };
 
-  if (!isVisible || !selectedRecipe) return null;
+  const getRouteContext = (): RouteContext => {
+    const routeContextMap: Record<string, RouteContext> = {
+      '/': {
+        description: 'Welcome to PorkChop! What would you like to do today?',
+        suggestedQuestions: [
+          'What can I cook with ingredients I have?',
+          'Show me my saved recipes',
+          'How do I create a new recipe?'
+        ],
+        features: [
+          {
+            name: 'Dashboard',
+            suggestedQuestions: [
+              'How do I use this dashboard?',
+              'What do these stats mean?',
+              'How can I see my recent activity?'
+            ]
+          }
+        ]
+      },
+      '/create-recipe': {
+        description: 'Ready to create a new recipe? I can help with ingredient selection and cooking methods.',
+        suggestedQuestions: [
+          'How do I choose the best protein?',
+          'What vegetables pair well with beef?',
+          'Help me with seasoning recommendations'
+        ],
+        features: [
+          {
+            name: 'Ingredient Selection',
+            suggestedQuestions: [
+              'What protein options do I have?',
+              'How do I select multiple ingredients?',
+              'Can I clear my selection?'
+            ]
+          },
+          {
+            name: 'Recipe Matching',
+            suggestedQuestions: [
+              'How does recipe matching work?',
+              'Why did I get these recipe recommendations?',
+              'How can I improve my matches?'
+            ]
+          }
+        ]
+      },
+      '/my-cookbook': {
+        description: 'Here are all your saved recipes. Need help organizing or finding something specific?',
+        suggestedQuestions: [
+          'How do I organize my recipes into collections?',
+          'Can I sort recipes by difficulty?',
+          'Show me my favorite recipes'
+        ],
+        features: [
+          {
+            name: 'Recipe Management',
+            suggestedQuestions: [
+              'How do I edit a recipe?',
+              'Can I share my recipes?',
+              'How do I delete a recipe?'
+            ]
+          },
+          {
+            name: 'Collections',
+            suggestedQuestions: [
+              'How do I create a new collection?',
+              'Can I move recipes between collections?',
+              'How do I rename a collection?'
+            ]
+          }
+        ]
+      },
+      '/butcher-shop': {
+        description: 'Welcome to the Butcher Shop! Connect with local butchers and specialty meat suppliers.',
+        suggestedQuestions: [
+          'How does the butcher shop work?',
+          'When will this feature be available?',
+          'What types of meats will be offered?'
+        ],
+        features: [
+          {
+            name: 'Local Partnerships',
+            suggestedQuestions: [
+              'How are local butchers selected?',
+              'Can I request specific butchers?',
+              'What is the delivery area?'
+            ]
+          }
+        ]
+      },
+      '/chefs-corner': {
+        description: 'Welcome to Chef\'s Corner! Connect with the community, share experiences, and improve your skills.',
+        suggestedQuestions: [
+          'How do challenges work?',
+          'What tutorials are available?',
+          'How do I earn achievements?'
+        ],
+        features: [
+          {
+            name: 'Challenges',
+            suggestedQuestions: [
+              'What is the current weekly challenge?',
+              'How do I submit my challenge entry?',
+              'What rewards can I earn?'
+            ]
+          },
+          {
+            name: 'Tutorials',
+            suggestedQuestions: [
+              'How do I access knife skills tutorials?',
+              'Are there beginner-friendly tutorials?',
+              'What cooking techniques can I learn?'
+            ]
+          }
+        ]
+      }
+    };
 
-  // Common cooking tips and timers based on recipe type
-  const getSuggestedTimers = (recipe: Recipe) => {
-    // Example timers - this would be customized based on actual recipe steps
-    return [
-      { name: "Rest Time", duration: 10 },
-      { name: "Cooking Time", duration: 20 },
-      { name: "Prep Time", duration: 5 }
-    ];
+    return routeContextMap[currentRoute] || {
+      description: 'How can I help you with PorkChop today?',
+      suggestedQuestions: [
+        'What features does PorkChop offer?',
+        'How do I create a recipe?',
+        'Where can I find cooking tips?'
+      ],
+      features: []
+    };
   };
 
-  return (
-    <div 
-      className={`fixed bottom-4 right-4 flex items-end gap-4 transition-all duration-500 transform ${
-        isVisible ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'
-      }`}
-    >
-      {/* Speech Bubble */}
-      <div className="max-w-sm bg-white rounded-2xl shadow-xl p-6 mb-2 relative border-2 border-porkchop-100">
-        {/* Close Button */}
-        <button 
-          onClick={onClose}
-          className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 transition-colors"
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+  const getRecipeContext = (): RecipeContext | null => {
+    if (!currentRecipe && !recommendedRecipe) return null;
 
-        <div className="mb-4">
-          <h3 className="text-xl font-bold text-porkchop-900 mb-2">
-            Chef Freddie at your service! 👨‍🍳
-          </h3>
-          {chefMessage && (
-            <p className="text-sm text-porkchop-700 bg-porkchop-50 p-3 rounded-lg mb-3 animate-fade-in">
-              {chefMessage}
-            </p>
-          )}
-          <p className="text-sm text-gray-600">
-            Ready to help you master {selectedRecipe.title}! Need a timer or have a question?
-          </p>
-        </div>
+    const recipe = currentRecipe || recommendedRecipe;
+    
+    if (!recipe) return null;
 
-        {/* Active Timers */}
-        {timers.length > 0 && (
-          <div className="space-y-2 mb-4">
-            {timers.map(timer => (
-              <div 
-                key={timer.id}
-                className={`flex items-center justify-between p-3 rounded-lg border ${
-                  timer.isRunning ? 'border-porkchop-300 bg-porkchop-50' : 'border-gray-200'
-                }`}
-              >
-                <span className="text-sm font-medium text-porkchop-900">{timer.name}</span>
-                <span className={`text-sm ${timer.isRunning ? 'text-porkchop-700' : 'text-gray-500'}`}>
-                  {formatTime(timer.remaining)}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
+    return {
+      suggestedQuestions: [
+        `How long should I cook ${recipe.title}?`,
+        `What's the best way to prepare the ingredients?`,
+        `Do you have any substitution ideas for this recipe?`,
+        `What cookware do I need for this recipe?`,
+        `Would this recipe work for a beginner?`
+      ]
+    };
+  };
 
-        {/* Suggested Timers */}
-        <div className="space-y-2 mb-4">
-          {getSuggestedTimers(selectedRecipe).map((timer, index) => (
-            <button
-              key={index}
-              onClick={() => startNewTimer(timer.name, timer.duration)}
-              className="w-full text-left px-4 py-3 text-sm rounded-xl hover:bg-porkchop-50 text-porkchop-700 transition-colors duration-200 border border-porkchop-100 hover:border-porkchop-200 hover:shadow-sm flex justify-between items-center"
-            >
-              <span>Set timer for {timer.name}</span>
-              <span className="text-porkchop-500">{timer.duration}m</span>
-            </button>
-          ))}
-        </div>
+  const value: ChefFreddieContextType = {
+    isVisible,
+    showChefFreddie,
+    hideChefFreddie,
+    currentRecipe,
+    setCurrentRecipe,
+    recommendedRecipe,
+    setRecommendedRecipe,
+    currentRoute,
+    getContextualHelp,
+    getRouteContext,
+    getRecipeContext
+  };
 
-        {/* Custom Question/Timer Input */}
-        <form onSubmit={handleSubmitQuestion} className="relative">
-          <input
-            type="text"
-            value={customQuestion}
-            onChange={(e) => setCustomQuestion(e.target.value)}
-            placeholder='Ask a question or "Timer for X minutes"'
-            className="w-full px-4 py-2 pr-12 text-sm border-2 border-porkchop-100 rounded-xl focus:outline-none focus:border-porkchop-300 focus:ring-2 focus:ring-porkchop-100"
-          />
-          <button
-            type="submit"
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-porkchop-500 hover:text-porkchop-700 disabled:opacity-50"
-            disabled={!customQuestion.trim()}
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
-          </button>
-        </form>
-        
-        {/* Triangle pointer */}
-        <div className="absolute -bottom-3 right-12 w-6 h-6 bg-white border-b-2 border-r-2 border-porkchop-100 transform rotate-45"></div>
-      </div>
-
-      {/* Chef Freddie Icon */}
-      <div className="w-24 h-24 bg-porkchop-50 rounded-full shadow-xl border-2 border-porkchop-200 flex items-center justify-center overflow-hidden hover:scale-110 transition-transform duration-200 cursor-pointer p-3">
-        <svg 
-          viewBox="0 0 500 500" 
-          className="w-full h-full text-porkchop-900"
-          fill="currentColor"
-        >
-          <path d="M250 10c-132.3 0-240 107.7-240 240s107.7 240 240 240 240-107.7 240-240S382.3 10 250 10zm0 460c-121.5 0-220-98.5-220-220S128.5 30 250 30s220 98.5 220 220-98.5 220-220 220z"/>
-          <path d="M250 70c-99.4 0-180 80.6-180 180s80.6 180 180 180 180-80.6 180-180S349.4 70 250 70zm0 340c-88.4 0-160-71.6-160-160s71.6-160 160-160 160 71.6 160 160-71.6 160-160 160z"/>
-          <path d="M250 130c-66.3 0-120 53.7-120 120s53.7 120 120 120 120-53.7 120-120-53.7-120-120-120zm0 220c-55.2 0-100-44.8-100-100s44.8-100 100-100 100 44.8 100 100-44.8 100-100 100z"/>
-          <path d="M250 190c-33.1 0-60 26.9-60 60s26.9 60 60 60 60-26.9 60-60-26.9-60-60-60zm0 100c-22.1 0-40-17.9-40-40s17.9-40 40-40 40 17.9 40 40-17.9 40-40 40z"/>
-          <path d="M250 250c0-11 9-20 20-20s20 9 20 20-9 20-20 20-20-9-20-20z"/>
-          <path d="M190 250c0-11 9-20 20-20s20 9 20 20-9 20-20 20-20-9-20-20z"/>
-          <path d="M220 290c0-11 9-20 20-20s20 9 20 20-9 20-20 20-20-9-20-20z"/>
-          <path d="M280 290c0-11 9-20 20-20s20 9 20 20-9 20-20 20-20-9-20-20z"/>
-          <path d="M310 250c0-11 9-20 20-20s20 9 20 20-9 20-20 20-20-9-20-20z"/>
-          <path d="M250 310c-33.1 0-60 26.9-60 60s26.9 60 60 60 60-26.9 60-60-26.9-60-60-60zm0 100c-22.1 0-40-17.9-40-40s17.9-40 40-40 40 17.9 40 40-17.9 40-40 40z"/>
-        </svg>
-      </div>
-    </div>
-  );
+  return <ChefFreddieContext.Provider value={value}>{children}</ChefFreddieContext.Provider>;
 };
 
-export default ChefFreddie; 
+export const useChefFreddie = () => {
+  const context = useContext(ChefFreddieContext);
+  if (!context) {
+    throw new Error('useChefFreddie must be used within a ChefFreddieProvider');
+  }
+  return context;
+};

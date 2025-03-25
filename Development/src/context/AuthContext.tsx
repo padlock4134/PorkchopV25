@@ -1,15 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import Airtable from 'airtable';
-import type { User as AirtableUser } from '../services/airtable';
+import { setStorageItem, getStorageItem, removeStorageItem } from '../utils/localStorage';
 
-// Initialize Airtable with API key and base ID from environment variables
-const base = new Airtable({
-  apiKey: process.env.NEXT_PUBLIC_AIRTABLE_API_KEY, // Use environment variables
-}).base(process.env.NEXT_PUBLIC_AIRTABLE_BASE_ID || ''); // Fallback to an empty string
-
-const usersTable = base('Users');
-
-interface User {
+export interface User {
   id: string;
   email: string;
   firstName: string;
@@ -17,6 +9,7 @@ interface User {
   name: string;
   avatar: string;
   recipesCreated: number;
+  createdAt: string;
   socialLinks?: {
     instagram?: string;
     facebook?: string;
@@ -36,6 +29,8 @@ interface AuthContextType {
   updateProfile: (updates: Partial<User>) => Promise<void>;
 }
 
+const USER_STORAGE_KEY = 'porkchop_user';
+
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
@@ -46,85 +41,51 @@ export const useAuth = () => {
   return context;
 };
 
-const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true); // Default to true until auth check is complete
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [useAirtable, setUseAirtable] = useState(false);
 
+  // Load user from localStorage on mount
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
-        }
-      } catch (err) {
-        console.error('Error restoring user session:', err);
-        setError('Failed to restore user session');
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    const testAirtable = async () => {
-      try {
-        await usersTable.select({ maxRecords: 1 }).firstPage();
-        setUseAirtable(true);
-      } catch (err) {
-        console.warn('Airtable connection failed, falling back to local auth');
-        setUseAirtable(false);
-      }
-    };
-
-    checkAuth();
-    testAirtable();
+    const storedUser = getStorageItem<User | null>(USER_STORAGE_KEY, null);
+    setUser(storedUser);
+    setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      let userObj: User;
-
-      if (useAirtable) {
-        const records = await usersTable
-          .select({ filterByFormula: `{Email} = '${email}'` })
-          .firstPage();
-
-        if (records.length === 0) {
-          throw new Error('User not found');
-        }
-
-        const airtableUser = records[0].fields as unknown as AirtableUser;
-        userObj = {
-          id: records[0].id,
-          email: airtableUser.Email,
-          firstName: airtableUser['First Name'],
-          lastName: airtableUser['Last Name'],
-          name: `${airtableUser['First Name']} ${airtableUser['Last Name']}`,
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            `${airtableUser['First Name']} ${airtableUser['Last Name']}`
-          )}`,
-          recipesCreated: 0,
-        };
-      } else {
-        userObj = {
-          id: `user_${Date.now()}`,
-          email,
-          firstName: email.split('@')[0],
-          lastName: 'User',
-          name: `${email.split('@')[0]} User`,
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            email.split('@')[0]
-          )}`,
-          recipesCreated: 0,
-        };
+      // In a real app, we'd validate credentials against an API
+      // For now, we'll create a mock user with the provided email
+      
+      // Simple email validation
+      if (!email.includes('@')) {
+        throw new Error('Invalid email format');
+      }
+      
+      // Simple password validation
+      if (password.length < 6) {
+        throw new Error('Password must be at least 6 characters');
       }
 
-      setUser(userObj);
-      localStorage.setItem('user', JSON.stringify(userObj));
+      const newUser: User = {
+        id: `user_${Date.now()}`,
+        email,
+        firstName: email.split('@')[0],
+        lastName: 'User',
+        name: `${email.split('@')[0]} User`,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+          email.split('@')[0]
+        )}`,
+        recipesCreated: 0,
+        createdAt: new Date().toISOString()
+      };
+
+      setUser(newUser);
+      setStorageItem(USER_STORAGE_KEY, newUser);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
       throw err;
@@ -133,56 +94,41 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     }
   };
 
-  const signup = async (email: string, password: string, firstName: string, lastName: string) => {
+  const signup = async (
+    email: string, 
+    password: string, 
+    firstName: string, 
+    lastName: string
+  ): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
     try {
-      let userObj: User;
-
-      if (useAirtable) {
-        const existingRecords = await usersTable
-          .select({ filterByFormula: `{Email} = '${email}'` })
-          .firstPage();
-
-        if (existingRecords.length > 0) {
-          throw new Error('User already exists');
-        }
-
-        const record = await usersTable.create({
-          Email: email,
-          'First Name': firstName,
-          'Last Name': lastName,
-        });
-
-        const airtableUser = record.fields as unknown as AirtableUser;
-        userObj = {
-          id: record.id,
-          email: airtableUser.Email,
-          firstName: airtableUser['First Name'],
-          lastName: airtableUser['Last Name'],
-          name: `${airtableUser['First Name']} ${airtableUser['Last Name']}`,
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            `${airtableUser['First Name']} ${airtableUser['Last Name']}`
-          )}`,
-          recipesCreated: 0,
-        };
-      } else {
-        userObj = {
-          id: `user_${Date.now()}`,
-          email,
-          firstName,
-          lastName,
-          name: `${firstName} ${lastName}`,
-          avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-            `${firstName} ${lastName}`
-          )}`,
-          recipesCreated: 0,
-        };
+      // Simple email validation
+      if (!email.includes('@')) {
+        throw new Error('Invalid email format');
+      }
+      
+      // Simple password validation
+      if (password.length < 6) {
+        throw new Error('Password must be at least 6 characters');
       }
 
-      setUser(userObj);
-      localStorage.setItem('user', JSON.stringify(userObj));
+      const newUser: User = {
+        id: `user_${Date.now()}`,
+        email,
+        firstName,
+        lastName,
+        name: `${firstName} ${lastName}`,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
+          `${firstName} ${lastName}`
+        )}`,
+        recipesCreated: 0,
+        createdAt: new Date().toISOString()
+      };
+
+      setUser(newUser);
+      setStorageItem(USER_STORAGE_KEY, newUser);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed');
       throw err;
@@ -191,13 +137,13 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     }
   };
 
-  const logout = async () => {
+  const logout = async (): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
     try {
       setUser(null);
-      localStorage.removeItem('user');
+      removeStorageItem(USER_STORAGE_KEY);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Logout failed');
       throw err;
@@ -206,7 +152,7 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     }
   };
 
-  const updateProfile = async (updates: Partial<User>) => {
+  const updateProfile = async (updates: Partial<User>): Promise<void> => {
     setIsLoading(true);
     setError(null);
 
@@ -216,8 +162,14 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
       }
 
       const updatedUser = { ...user, ...updates };
+      
+      // Update the name if first name or last name changed
+      if (updates.firstName || updates.lastName) {
+        updatedUser.name = `${updatedUser.firstName} ${updatedUser.lastName}`;
+      }
+
       setUser(updatedUser);
-      localStorage.setItem('user', JSON.stringify(updatedUser));
+      setStorageItem(USER_STORAGE_KEY, updatedUser);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Profile update failed');
       throw err;
@@ -238,5 +190,3 @@ const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
-
-export { AuthProvider };

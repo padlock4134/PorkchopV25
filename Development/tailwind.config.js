@@ -6,6 +6,11 @@ module.exports = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Noto Sans', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        serif: ['Libre Bodoni', 'ui-serif', 'Georgia', 'serif'],
+        display: ['Playfair Display', 'serif'],
+      },
       colors: {
         'satriales': {
           50: '#fef2f2',
@@ -55,37 +60,35 @@ module.exports = {
           800: '#33df73',
           900: '#1ad961',
         },
-        'pink': {
-          50: '#fff5f7',
-          100: '#ffe4e8',
-          200: '#ffc2c7',
-          300: '#ffa1a5',
-          400: '#ff7f84',
-          500: '#ff5e62',
-          600: '#ff3c41',
-          700: '#ff1a1f',
-          800: '#e60000',
-          900: '#cc0000',
-        },
-        'yellow': {
-          50: '#fffbf0',
-          100: '#fef3c7',
-          200: '#fde68a',
-          300: '#fcd34d',
-          400: '#fbbf24',
-          500: '#f59e0b',
-          600: '#d97706',
-          700: '#b45309',
-          800: '#92400e',
-          900: '#78350f',
-        },
       },
       boxShadow: {
         'vintage': '0 4px 6px -1px rgba(139, 99, 71, 0.1), 0 2px 4px -1px rgba(139, 99, 71, 0.06)',
         'vintage-lg': '0 10px 15px -3px rgba(139, 99, 71, 0.1), 0 4px 6px -2px rgba(139, 99, 71, 0.05)',
+        'wooden': '0 3px 6px -1px rgba(46, 30, 18, 0.12), 0 2px 4px -1px rgba(46, 30, 18, 0.07)',
+        'tag': '0 2px 3px rgba(0, 0, 0, 0.1)',
       },
       backgroundImage: {
-        'butcher-pattern': "url('/public/patterns/butcher-pattern.png')",
+        'butcher-paper': "url('/images/butcher-paper-bg.png')",
+        'wood-texture': "url('/images/wood-texture.png')",
+        'paper-rip-top': "url('/images/paper-rip-top.png')",
+        'paper-rip-bottom': "url('/images/paper-rip-bottom.png')",
+      },
+      borderWidth: {
+        '3': '3px',
+      },
+      animation: {
+        'swing': 'swing 2s ease-in-out infinite',
+        'stamp-fade-in': 'stampFadeIn 1s ease-out forwards',
+      },
+      keyframes: {
+        swing: {
+          '0%, 100%': { transform: 'rotate(-3deg)' },
+          '50%': { transform: 'rotate(3deg)' },
+        },
+        stampFadeIn: {
+          '0%': { opacity: 0, transform: 'rotate(15deg) scale(0.7)' },
+          '100%': { opacity: 1, transform: 'rotate(15deg) scale(1)' },
+        }
       },
     },
   },

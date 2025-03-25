@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "jsx": "react", // Correct option for JSX support
     "composite": true,
     "skipLibCheck": true,
     "module": "ESNext",
