@@ -1,9 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { setUserData, getUserData } from '../utils/localStorage';
 import type { Recipe } from '../utils/recipeData';
 
-export interface Collection {
+interface Collection {
   id: string;
   name: string;
   description: string;
@@ -51,51 +50,17 @@ export const SavedRecipesProvider: React.FC<{ children: React.ReactNode }> = ({ 
       updatedAt: new Date().toISOString(),
     }
   ]);
-
-  // Load saved data from localStorage on mount or when user changes
-  useEffect(() => {
-    if (user) {
-      const savedData = getUserData<Recipe[]>(user.id, 'savedRecipes', []);
-      const collectionsData = getUserData<Collection[]>(user.id, 'collections', [
-        {
-          id: 'favorites',
-          name: 'Favorites',
-          description: 'Your most loved recipes',
-          recipeIds: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }
-      ]);
-      
-      setSavedRecipes(savedData);
-      setCollections(collectionsData);
-    } else {
-      // Reset state when user logs out
-      setSavedRecipes([]);
-      setCollections([
-        {
-          id: 'favorites',
-          name: 'Favorites',
-          description: 'Your most loved recipes',
-          recipeIds: [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        }
-      ]);
-    }
-  }, [user]);
-
+  
   // Save data to localStorage when it changes
   useEffect(() => {
     if (user) {
-      setUserData(user.id, 'savedRecipes', savedRecipes);
-      setUserData(user.id, 'collections', collections);
+      localStorage.setItem(`savedRecipes_${user.id}`, JSON.stringify(savedRecipes));
+      localStorage.setItem(`collections_${user.id}`, JSON.stringify(collections));
     }
   }, [user, savedRecipes, collections]);
-
+  
   const addToSaved = (recipe: Recipe) => {
     setSavedRecipes(prev => {
-      // Avoid duplicates
       if (prev.some(r => r.id === recipe.id)) return prev;
       return [...prev, recipe];
     });
@@ -183,28 +148,13 @@ export const SavedRecipesProvider: React.FC<{ children: React.ReactNode }> = ({ 
   };
 
   const addRecipe = (recipe: Recipe) => {
-    // Ensure the recipe has an ID
-    const recipeWithId = recipe.id ? recipe : { ...recipe, id: `recipe_${Date.now()}` };
-    setSavedRecipes(prev => [...prev, recipeWithId]);
-    
-    // If user is logged in, increment their recipesCreated count
-    if (user) {
-      user.recipesCreated += 1;
-    }
+    setSavedRecipes(prev => [...prev, recipe]);
   };
 
   const removeRecipe = (id: string) => {
     setSavedRecipes(prev => prev.filter(recipe => recipe.id !== id));
-    // Also remove from all collections
-    setCollections(prev => 
-      prev.map(collection => ({
-        ...collection,
-        recipeIds: collection.recipeIds.filter(recipeId => recipeId !== id),
-        updatedAt: new Date().toISOString()
-      }))
-    );
   };
-
+  
   const value = {
     savedRecipes,
     collections,
@@ -227,3 +177,20 @@ export const SavedRecipesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     </SavedRecipesContext.Provider>
   );
 };
+
+  // Load saved data from localStorage on mount
+  useEffect(() => {
+    if (user) {
+      const savedData = localStorage.getItem(`savedRecipes_${user.id}`);
+      const collectionsData = localStorage.getItem(`collections_${user.id}`);
+      
+      if (savedData) {
+        const parsedRecipes = JSON.parse(savedData);
+        setSavedRecipes(parsedRecipes);
+      }
+      
+      if (collectionsData) {
+        setCollections(JSON.parse(collectionsData));
+      }
+    }
+  }, [user]);

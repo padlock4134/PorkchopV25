@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { setStorageItem, getStorageItem, removeStorageItem } from '../utils/localStorage';
 
-export interface User {
+interface User {
   id: string;
   email: string;
   firstName: string;
@@ -10,6 +9,9 @@ export interface User {
   avatar: string;
   recipesCreated: number;
   createdAt: string;
+  subscriptionTier: 'free' | 'premium';
+  subscriptionStatus: 'active' | 'canceled' | 'trial' | 'expired';
+  trialEndDate?: string;
   socialLinks?: {
     instagram?: string;
     facebook?: string;
@@ -29,8 +31,6 @@ interface AuthContextType {
   updateProfile: (updates: Partial<User>) => Promise<void>;
 }
 
-const USER_STORAGE_KEY = 'porkchop_user';
-
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const useAuth = () => {
@@ -48,30 +48,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Load user from localStorage on mount
   useEffect(() => {
-    const storedUser = getStorageItem<User | null>(USER_STORAGE_KEY, null);
-    setUser(storedUser);
-    setIsLoading(false);
+    const checkAuth = async () => {
+      try {
+        const storedUser = localStorage.getItem('user');
+        if (storedUser) {
+          setUser(JSON.parse(storedUser));
+        }
+      } catch (err) {
+        console.error('Error restoring user session:', err);
+        setError('Failed to restore user session');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    checkAuth();
   }, []);
 
-  const login = async (email: string, password: string): Promise<void> => {
+  const login = async (email: string, password: string) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // In a real app, we'd validate credentials against an API
-      // For now, we'll create a mock user with the provided email
+      // This is a simplified mock login - in a real app, you'd call an API
+      // For demo purposes, any email/password will work
       
-      // Simple email validation
-      if (!email.includes('@')) {
-        throw new Error('Invalid email format');
-      }
-      
-      // Simple password validation
-      if (password.length < 6) {
-        throw new Error('Password must be at least 6 characters');
-      }
-
-      const newUser: User = {
+      // Create a demo user object for any login
+      const userObj: User = {
         id: `user_${Date.now()}`,
         email,
         firstName: email.split('@')[0],
@@ -81,11 +84,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email.split('@')[0]
         )}`,
         recipesCreated: 0,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        subscriptionTier: 'free',
+        subscriptionStatus: 'trial',
+        trialEndDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() // 14 days trial
       };
 
-      setUser(newUser);
-      setStorageItem(USER_STORAGE_KEY, newUser);
+      setUser(userObj);
+      localStorage.setItem('user', JSON.stringify(userObj));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Login failed');
       throw err;
@@ -94,27 +100,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signup = async (
-    email: string, 
-    password: string, 
-    firstName: string, 
-    lastName: string
-  ): Promise<void> => {
+  const signup = async (email: string, password: string, firstName: string, lastName: string) => {
     setIsLoading(true);
     setError(null);
 
     try {
-      // Simple email validation
-      if (!email.includes('@')) {
-        throw new Error('Invalid email format');
-      }
-      
-      // Simple password validation
-      if (password.length < 6) {
-        throw new Error('Password must be at least 6 characters');
-      }
-
-      const newUser: User = {
+      // This is a simplified mock signup - in a real app, you'd call an API
+      // Create a new user object
+      const userObj: User = {
         id: `user_${Date.now()}`,
         email,
         firstName,
@@ -124,11 +117,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           `${firstName} ${lastName}`
         )}`,
         recipesCreated: 0,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
+        subscriptionTier: 'free',
+        subscriptionStatus: 'trial',
+        trialEndDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() // 14 days trial
       };
 
-      setUser(newUser);
-      setStorageItem(USER_STORAGE_KEY, newUser);
+      setUser(userObj);
+      localStorage.setItem('user', JSON.stringify(userObj));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed');
       throw err;
@@ -137,13 +133,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = async (): Promise<void> => {
+  const logout = async () => {
     setIsLoading(true);
     setError(null);
 
     try {
       setUser(null);
-      removeStorageItem(USER_STORAGE_KEY);
+      localStorage.removeItem('user');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Logout failed');
       throw err;
@@ -152,7 +148,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateProfile = async (updates: Partial<User>): Promise<void> => {
+  const updateProfile = async (updates: Partial<User>) => {
     setIsLoading(true);
     setError(null);
 
@@ -162,14 +158,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       const updatedUser = { ...user, ...updates };
-      
-      // Update the name if first name or last name changed
-      if (updates.firstName || updates.lastName) {
-        updatedUser.name = `${updatedUser.firstName} ${updatedUser.lastName}`;
-      }
-
       setUser(updatedUser);
-      setStorageItem(USER_STORAGE_KEY, updatedUser);
+      localStorage.setItem('user', JSON.stringify(updatedUser));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Profile update failed');
       throw err;

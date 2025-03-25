@@ -1,10 +1,10 @@
-// src/App.tsx
 import React from 'react';
 import { Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { SavedRecipesProvider } from './context/SavedRecipesContext';
 import { ChefFreddieProvider } from './context/ChefFreddieContext';
 import { ChallengeProvider } from './context/ChallengeContext';
+import { SubscriptionProvider } from './context/SubscriptionContext';
 import Navigation from './components/Navigation';
 import Dashboard from './components/Dashboard';
 import CreateRecipe from './components/CreateRecipe';
@@ -16,7 +16,6 @@ import Signup from './components/SignupPage';
 import PrivateRoute from './components/PrivateRoute';
 import GlobalChefFreddie from './components/GlobalChefFreddie';
 import ChefsCorner from './components/ChefsCorner';
-import AirtableConnectionStatus from './components/AirtableConnectionStatus';
 
 const AppContent: React.FC = () => {
   const location = useLocation();
@@ -79,20 +78,21 @@ const AppContent: React.FC = () => {
         </Routes>
       </main>
       {!isAuthPage && <GlobalChefFreddie />}
-      {process.env.NODE_ENV === 'development' && <AirtableConnectionStatus />}
     </div>
   );
 };
 
 const App: React.FC = () => (
   <AuthProvider>
-    <SavedRecipesProvider>
-      <ChefFreddieProvider>
-        <ChallengeProvider>
-          <AppContent />
-        </ChallengeProvider>
-      </ChefFreddieProvider>
-    </SavedRecipesProvider>
+    <SubscriptionProvider>
+      <SavedRecipesProvider>
+        <ChefFreddieProvider>
+          <ChallengeProvider>
+            <AppContent />
+          </ChallengeProvider>
+        </ChefFreddieProvider>
+      </SavedRecipesProvider>
+    </SubscriptionProvider>
   </AuthProvider>
 );
 

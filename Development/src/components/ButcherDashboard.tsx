@@ -1,6 +1,6 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useButcherTheme } from './ButcherThemeProvider';
 import ButcherCard from './ButcherCard';
 import MeatTag from './MeatTag';
@@ -10,6 +10,7 @@ import ChefFreddieLogo from '../components/ChefFreddieLogo';
 const ButcherDashboard: React.FC = () => {
   const { user } = useAuth();
   const theme = useButcherTheme();
+  const navigate = useNavigate();
 
   const quickActions = [
     {
@@ -61,6 +62,14 @@ const ButcherDashboard: React.FC = () => {
       time: 'Just now'
     }
   ];
+
+  const handleExploreRecipes = () => {
+    navigate('/recipes');
+  };
+
+  const handleCreateRecipe = () => {
+    navigate('/create-recipe');
+  };
 
   return (
     <div className="min-h-screen bg-vintage-50">
@@ -230,14 +239,16 @@ const ButcherDashboard: React.FC = () => {
             <ButcherButton
               variant="primary"
               size="large"
-              onClick={() => {}}
+              onClick={handleExploreRecipes}
+              aria-label="Explore Recipes"
             >
               Explore Recipes
             </ButcherButton>
             <ButcherButton
               variant="secondary"
               size="large"
-              onClick={() => {}}
+              onClick={handleCreateRecipe}
+              aria-label="Create Recipe"
             >
               Create Recipe
             </ButcherButton>
