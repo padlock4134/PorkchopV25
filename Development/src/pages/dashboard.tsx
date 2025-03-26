@@ -3,18 +3,53 @@ import { useAuth } from '../context/AuthContext';
 import Link from 'next/link';
 import ChefFreddieLogo from '../components/ChefFreddieLogo';
 import { useSavedRecipes } from '../context/SavedRecipesContext';
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useChefFreddie } from '../context/ChefFreddieContext';
+import { useRouter } from 'next/router';
+import { getDailyTip } from '../utils/cookingTips';
 
 const Dashboard: NextPage = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { savedRecipes, collections } = useSavedRecipes();
   const { showChefFreddie } = useChefFreddie();
+  const router = useRouter();
+  const [dailyTip, setDailyTip] = useState<string>('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   
-  // Show Chef Freddie when dashboard loads
+  // Show Chef Freddie when dashboard loads and get daily tip
   useEffect(() => {
     showChefFreddie();
+    setDailyTip(getDailyTip());
   }, [showChefFreddie]);
+  
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+  
+  const handleLogout = async () => {
+    try {
+      await logout();
+      router.push('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  };
+
+  const navigateToProfile = () => {
+    setDropdownOpen(false);
+    router.push('/profile');
+  };
 
   const quickActions = [
     {
@@ -72,20 +107,74 @@ const Dashboard: NextPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Welcome Message */}
+      {/* Header with Profile Dropdown */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold text-butcher-800">Dashboard</h1>
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setDropdownOpen(!dropdownOpen)}
+            className="px-4 py-2 bg-butcher-600 text-white rounded-lg hover:bg-butcher-700 transition-colors flex items-center"
+            aria-expanded={dropdownOpen}
+            aria-haspopup="true"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+            </svg>
+            {user?.firstName || 'Profile'}
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+            </svg>
+          </button>
+          
+          {/* Dropdown Menu */}
+          {dropdownOpen && (
+            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
+              <div className="py-1 rounded-md bg-white shadow-xs">
+                <Link href="/temp-profile" legacyBehavior>
+                  <a 
+                    className="block px-4 py-2 text-sm text-butcher-700 hover:bg-butcher-100"
+                    onClick={() => setDropdownOpen(false)}
+                  >
+                    Profile Settings
+                  </a>
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                >
+                  Sign Out
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Welcome Message with Daily Tip */}
       <div className="bg-white rounded-lg shadow-vintage p-6 mb-8">
         <div className="flex items-center space-x-4">
-          <div className="w-12 h-12">
+          <div className="w-12 h-12 transition-transform hover:scale-110">
             <ChefFreddieLogo />
           </div>
-          <div>
-            <h1 className="text-2xl font-bold text-butcher-800">Welcome back, {user?.name || 'Chef'}!</h1>
+          <div className="flex-1">
+            <h2 className="text-2xl font-bold text-butcher-800">Welcome back, {user?.name || 'Chef'}!</h2>
             <p className="text-butcher-600">
               {savedRecipes.length === 0 
                 ? "I notice you haven't saved any recipes yet. Would you like to start by creating one?"
                 : `I see you have ${savedRecipes.length} saved recipes in your cookbook.`
               }
             </p>
+          </div>
+        </div>
+        
+        {/* Daily Tip - Now Static */}
+        <div className="mt-4 p-4 bg-vintage-50 rounded-lg border border-satriales-200">
+          <div className="flex items-start">
+            <span className="text-2xl mr-3">💡</span>
+            <div>
+              <h3 className="font-medium text-butcher-800 mb-1">Tip of the Day:</h3>
+              <p className="text-butcher-600">{dailyTip}</p>
+            </div>
           </div>
         </div>
       </div>
@@ -164,7 +253,10 @@ const Dashboard: NextPage = () => {
                 <span className="text-butcher-500">🔥 {savedRecipes[0].difficulty}</span>
               </div>
               <div className="mt-4">
-                <Link href={`/recipe/${savedRecipes[0].id}`} className="px-4 py-2 bg-satriales-500 text-white rounded-lg hover:bg-satriales-600 transition-colors">
+                <Link 
+                  href={`/recipe/${savedRecipes[0].id}`} 
+                  className="px-4 py-2 bg-satriales-500 text-white rounded-lg hover:bg-satriales-600 transition-colors inline-block"
+                >
                   View Recipe
                 </Link>
               </div>

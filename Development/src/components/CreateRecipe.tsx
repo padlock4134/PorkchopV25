@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/router';
 import { Recipe } from '../utils/recipeData';
 import { useChefFreddie } from '../context/ChefFreddieContext';
 
@@ -12,7 +12,7 @@ interface SelectedItems {
 }
 
 const CreateRecipe: React.FC = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [currentStep, setCurrentStep] = useState(0);
   const [matchedRecipes, setMatchedRecipes] = useState<Recipe[]>([]);
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
@@ -185,26 +185,26 @@ const CreateRecipe: React.FC = () => {
       try {
         const matches = recipes
           .map(recipe => {
-            const proteinMatches = recipe.proteinTags.filter(tag => 
+            const proteinMatches = recipe.proteinTags?.filter(tag => 
               selectedItems.proteins.includes(tag)
-            ).length;
-            const veggieMatches = recipe.veggieTags.filter(tag => 
+            )?.length || 0;
+            const veggieMatches = recipe.veggieTags?.filter(tag => 
               selectedItems.vegetables.includes(tag)
-            ).length;
-            const herbMatches = recipe.herbTags.filter(tag => 
+            )?.length || 0;
+            const herbMatches = recipe.herbTags?.filter(tag => 
               selectedItems.grainsAndSpices.includes(tag)
-            ).length;
-            const pantryMatches = recipe.pantryTags.filter(tag => 
+            )?.length || 0;
+            const pantryMatches = recipe.pantryTags?.filter(tag => 
               selectedItems.pantry.includes(tag)
-            ).length;
+            )?.length || 0;
 
             const totalMatches = proteinMatches + veggieMatches + herbMatches + pantryMatches;
-            const totalTags = recipe.proteinTags.length + recipe.veggieTags.length + 
-              recipe.herbTags.length + recipe.pantryTags.length;
+            const totalTags = (recipe.proteinTags?.length || 0) + (recipe.veggieTags?.length || 0) + 
+              (recipe.herbTags?.length || 0) + (recipe.pantryTags?.length || 0);
 
             return {
               ...recipe,
-              matchPercentage: (totalMatches / totalTags) * 100
+              matchPercentage: totalTags > 0 ? (totalMatches / totalTags) * 100 : 0
             };
           })
           .filter(recipe => (recipe.matchPercentage ?? 0) > 0)
@@ -257,7 +257,7 @@ const CreateRecipe: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-vintage-50 p-6">
+    <div className="bg-vintage-50 p-6 rounded-lg">
       <div className="max-w-7xl mx-auto">
         <div className="bg-white shadow-vintage rounded-lg p-8 mb-8">
           <div className="flex justify-between items-center mb-8">
@@ -306,59 +306,65 @@ const CreateRecipe: React.FC = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {matchedRecipes.map(matchedRecipe => (
-                <div
-                  key={matchedRecipe.id}
-                  className={`
-                    bg-white shadow-vintage rounded-lg overflow-hidden transform transition-all duration-300
-                    hover:shadow-vintage-lg hover:-translate-y-1
-                    ${currentRecipe?.id === matchedRecipe.id ? 'ring-2 ring-satriales-500' : ''}
-                  `}
-                >
-                  <div className="relative">
-                    <img
-                      src={matchedRecipe.imageUrl}
-                      alt={matchedRecipe.title}
-                      className="w-full h-48 object-cover"
-                    />
-                    <div className="absolute top-0 right-0 m-4">
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-satriales-100 text-satriales-800">
-                        {Math.round(matchedRecipe.matchPercentage || 0)}% Match
-                      </span>
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    <h3 className="text-xl font-bold text-butcher-800 mb-2">
-                      {matchedRecipe.title}
-                    </h3>
-                    <p className="text-butcher-600 mb-4 line-clamp-2">
-                      {matchedRecipe.description}
-                    </p>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <span className="flex items-center text-sm text-butcher-500">
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          {matchedRecipe.cookingTime} mins
-                        </span>
-                        <span className="flex items-center text-sm text-butcher-500">
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0M7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                          </svg>
-                          {matchedRecipe.servings} servings
+              {matchedRecipes.length > 0 ? (
+                matchedRecipes.map(matchedRecipe => (
+                  <div
+                    key={matchedRecipe.id}
+                    className={`
+                      bg-white shadow-vintage rounded-lg overflow-hidden transform transition-all duration-300
+                      hover:shadow-vintage-lg hover:-translate-y-1
+                      ${currentRecipe?.id === matchedRecipe.id ? 'ring-2 ring-satriales-500' : ''}
+                    `}
+                  >
+                    <div className="relative">
+                      <img
+                        src={matchedRecipe.imageUrl}
+                        alt={matchedRecipe.title}
+                        className="w-full h-48 object-cover"
+                      />
+                      <div className="absolute top-0 right-0 m-4">
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-satriales-100 text-satriales-800">
+                          {Math.round(matchedRecipe.matchPercentage || 0)}% Match
                         </span>
                       </div>
-                      <button
-                        onClick={() => handleRecipeSelect(matchedRecipe)}
-                        className="px-4 py-2 text-sm font-medium text-satriales-600 hover:text-satriales-700"
-                      >
-                        {currentRecipe?.id === matchedRecipe.id ? 'Selected' : 'Select'}
-                      </button>
+                    </div>
+                    <div className="p-6">
+                      <h3 className="text-xl font-bold text-butcher-800 mb-2">
+                        {matchedRecipe.title}
+                      </h3>
+                      <p className="text-butcher-600 mb-4 line-clamp-2">
+                        {matchedRecipe.description}
+                      </p>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-4">
+                          <span className="flex items-center text-sm text-butcher-500">
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            {matchedRecipe.cookingTime} mins
+                          </span>
+                          <span className="flex items-center text-sm text-butcher-500">
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0M7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                            </svg>
+                            {matchedRecipe.servings} servings
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleRecipeSelect(matchedRecipe)}
+                          className="px-4 py-2 text-sm font-medium text-satriales-600 hover:text-satriales-700"
+                        >
+                          {currentRecipe?.id === matchedRecipe.id ? 'Selected' : 'Select'}
+                        </button>
+                      </div>
                     </div>
                   </div>
+                ))
+              ) : (
+                <div className="col-span-3 text-center py-8">
+                  <p className="text-butcher-600">No matching recipes found. Try selecting different ingredients.</p>
                 </div>
-              ))}
+              )}
             </div>
           )}
 

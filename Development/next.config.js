@@ -1,35 +1,29 @@
 /** @type {import('next').NextConfig} */
+const path = require('path');
+
 const nextConfig = {
   reactStrictMode: true,
-  swcMinify: true,
-  
-  // Explicitly set server port to 3000
-  serverRuntimeConfig: {
-    port: 3000,
-  },
-  
-  // Enable static optimization for faster page loads
-  experimental: {
-    optimizeFonts: true,
-  },
-  
-  // Configure image domains if needed
-  images: {
-    domains: ['ui-avatars.com'],
-  },
-  
-  // Enable Static Exports
-  output: process.env.EXPORT_STATIC === 'true' ? 'export' : undefined,
-  
-  // Set environment variables
-  env: {
-    APP_NAME: 'PorkChop',
-    APP_VERSION: '2.0.0',
-  },
-
-  // Configure webpack if needed
-  webpack(config) {
+  // Optional: Configure path aliases
+  webpack: (config) => {
+    config.resolve.alias['@'] = path.resolve(__dirname, './src');
     return config;
+  },
+  // Optional: Configure custom page extensions if needed
+  pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
+  // Add image configuration
+  images: {
+    domains: ['localhost'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
+  },
+  // Ensure proper handling of static assets
+  experimental: {
+    // This helps with compatibility for certain features
+    esmExternals: 'loose',
   },
 };
 

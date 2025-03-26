@@ -51,6 +51,23 @@ export const SavedRecipesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     }
   ]);
   
+  // Load saved data from localStorage on mount
+  useEffect(() => {
+    if (user) {
+      const savedData = localStorage.getItem(`savedRecipes_${user.id}`);
+      const collectionsData = localStorage.getItem(`collections_${user.id}`);
+      
+      if (savedData) {
+        const parsedRecipes = JSON.parse(savedData);
+        setSavedRecipes(parsedRecipes);
+      }
+      
+      if (collectionsData) {
+        setCollections(JSON.parse(collectionsData));
+      }
+    }
+  }, [user]);
+  
   // Save data to localStorage when it changes
   useEffect(() => {
     if (user) {
@@ -177,20 +194,3 @@ export const SavedRecipesProvider: React.FC<{ children: React.ReactNode }> = ({ 
     </SavedRecipesContext.Provider>
   );
 };
-
-  // Load saved data from localStorage on mount
-  useEffect(() => {
-    if (user) {
-      const savedData = localStorage.getItem(`savedRecipes_${user.id}`);
-      const collectionsData = localStorage.getItem(`collections_${user.id}`);
-      
-      if (savedData) {
-        const parsedRecipes = JSON.parse(savedData);
-        setSavedRecipes(parsedRecipes);
-      }
-      
-      if (collectionsData) {
-        setCollections(JSON.parse(collectionsData));
-      }
-    }
-  }, [user]);
