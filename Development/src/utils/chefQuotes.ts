@@ -46,6 +46,41 @@ export const chefQuotes: ChefQuote[] = [
     quote: "The secret of good cooking is, first, having the right ingredients.",
     author: "Alice Waters",
     role: "Chef & Food Activist"
+  },
+  {
+    quote: "Cooking is like painting or writing a song. Just as there are only so many notes or colors, there are only so many flavors - it's how you combine them that sets you apart.",
+    author: "Wolfgang Puck",
+    role: "Chef & Restaurateur"
+  },
+  {
+    quote: "I cook with wine, sometimes I even add it to the food.",
+    author: "Julia Child",
+    role: "Legendary Chef & Author"
+  },
+  {
+    quote: "The only real stumbling block is fear of failure. In cooking you've got to have a what-the-hell attitude.",
+    author: "Julia Child",
+    role: "Legendary Chef & Author"
+  },
+  {
+    quote: "A recipe has no soul. You, as the cook, must bring soul to the recipe.",
+    author: "Thomas Keller",
+    role: "Chef & Restaurateur"
+  },
+  {
+    quote: "Cooking is at once child's play and adult joy. And cooking done with care is an act of love.",
+    author: "Craig Claiborne",
+    role: "Food Journalist"
+  },
+  {
+    quote: "No one who cooks, cooks alone. Even at her most solitary, a cook in the kitchen is surrounded by generations of cooks past.",
+    author: "Laurie Colwin",
+    role: "Food Writer"
+  },
+  {
+    quote: "Cooking is like love. It should be entered into with abandon or not at all.",
+    author: "Harriet Van Horne",
+    role: "Journalist"
   }
 ];
 
@@ -67,6 +102,9 @@ const getConsistentRandomNumber = (date: Date): number => {
 };
 
 export const getDailyChefQuote = (): ChefQuote => {
-  // For now, just return the first Bourdain quote
-  return chefQuotes[0];
-}; 
+  const today = new Date();
+  const randomSeed = getConsistentRandomNumber(today);
+  const quoteIndex = randomSeed % chefQuotes.length;
+  
+  return chefQuotes[quoteIndex];
+};

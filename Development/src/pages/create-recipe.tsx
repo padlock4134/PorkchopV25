@@ -1,13 +1,14 @@
 import type { NextPage } from 'next';
 import { useEffect } from 'react';
 import { useChefFreddie } from '../context/ChefFreddieContext';
-import Link from 'next/link';
 import CreateRecipe from '../components/CreateRecipe';
+import { useAchievementTracker } from '../utils/achievementTracker';
+import Link from 'next/link';
 
 const CreateRecipePage: NextPage = () => {
-  const { showChefFreddie, setCurrentRoute } = useChefFreddie();
-  
-  // Set current route and show Chef Freddie
+  const { setCurrentRoute, showChefFreddie } = useChefFreddie();
+  const { trackRecipeCreation } = useAchievementTracker();
+
   useEffect(() => {
     setCurrentRoute('/create-recipe');
     showChefFreddie();
@@ -18,7 +19,7 @@ const CreateRecipePage: NextPage = () => {
       <div className="bg-white rounded-lg shadow-vintage p-6 mb-8">
         <h1 className="text-2xl font-bold text-butcher-800 mb-4">Create a Recipe</h1>
         <p className="text-butcher-600 mb-6">
-          Use ingredients you have on hand to create a delicious recipe.
+          Select ingredients and cookware to find matching recipes or create your own custom recipe.
         </p>
         
         {/* Ingredient selection component */}

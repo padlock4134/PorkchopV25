@@ -1,10 +1,8 @@
 {
   "/_app": "pages/_app.js",
-  "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/signup": "pages/signup.js",
-  "/login": "pages/login.js",
-  "/create-recipe": "pages/create-recipe.js",
+  "/_error": "pages/_error.js",
   "/dashboard": "pages/dashboard.js",
-  "/temp-profile": "pages/temp-profile.js"
+  "/the-grange": "pages/the-grange.js",
+  "/tutorials": "pages/tutorials.js"
 }

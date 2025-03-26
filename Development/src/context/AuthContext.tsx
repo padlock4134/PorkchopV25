@@ -12,6 +12,9 @@ interface User {
   subscriptionTier: 'free' | 'premium';
   subscriptionStatus: 'active' | 'canceled' | 'trial' | 'expired';
   trialEndDate?: string;
+  chefRank?: string;
+  rankLevel?: number;
+  preferredCuisines?: string[];
   socialLinks?: {
     instagram?: string;
     facebook?: string;
@@ -87,7 +90,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createdAt: new Date().toISOString(),
         subscriptionTier: 'free',
         subscriptionStatus: 'trial',
-        trialEndDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() // 14 days trial
+        trialEndDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days trial
+        chefRank: 'Sous Chef',
+        rankLevel: 2,
+        preferredCuisines: [],
+        socialLinks: {
+          instagram: '',
+          facebook: '',
+          twitter: '',
+          website: '',
+          youtube: ''
+        }
       };
 
       setUser(userObj);
@@ -120,7 +133,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         createdAt: new Date().toISOString(),
         subscriptionTier: 'free',
         subscriptionStatus: 'trial',
-        trialEndDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() // 14 days trial
+        trialEndDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days trial
+        chefRank: 'Apprentice',
+        rankLevel: 1,
+        preferredCuisines: [],
+        socialLinks: {
+          instagram: '',
+          facebook: '',
+          twitter: '',
+          website: '',
+          youtube: ''
+        }
       };
 
       setUser(userObj);
@@ -157,7 +180,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('No user logged in');
       }
 
-      const updatedUser = { ...user, ...updates };
+      // Handle nested socialLinks object properly
+      const updatedUser = { 
+        ...user, 
+        ...updates,
+        // Ensure socialLinks are properly merged
+        socialLinks: {
+          ...user.socialLinks,
+          ...(updates.socialLinks || {})
+        }
+      };
+      
       setUser(updatedUser);
       localStorage.setItem('user', JSON.stringify(updatedUser));
     } catch (err) {

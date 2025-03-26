@@ -3,40 +3,71 @@ import { useAuth } from '../context/AuthContext';
 import Link from 'next/link';
 import ChefFreddieLogo from '../components/ChefFreddieLogo';
 import { useSavedRecipes } from '../context/SavedRecipesContext';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { useChefFreddie } from '../context/ChefFreddieContext';
 import { useRouter } from 'next/router';
 import { getDailyTip } from '../utils/cookingTips';
+import { parseCSVRecipes, getRandomRecipes, Recipe, getDailyFeaturedRecipe, mockRecipes } from '../utils/recipeData';
 
 const Dashboard: NextPage = () => {
   const { user, logout } = useAuth();
-  const { savedRecipes, collections } = useSavedRecipes();
+  const { savedRecipes, collections, addToSaved } = useSavedRecipes();
   const { showChefFreddie } = useChefFreddie();
   const router = useRouter();
   const [dailyTip, setDailyTip] = useState<string>('');
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  
-  // Show Chef Freddie when dashboard loads and get daily tip
+  const [featuredRecipe, setFeaturedRecipe] = useState<Recipe | null>(null);
+  const [allRecipes, setAllRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showRecipeModal, setShowRecipeModal] = useState(false);
+
+  // Show Chef Freddie when dashboard loads, get daily tip, and load featured recipe
   useEffect(() => {
-    showChefFreddie();
-    setDailyTip(getDailyTip());
-  }, [showChefFreddie]);
-  
-  // Close dropdown when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-        setDropdownOpen(false);
+    const initDashboard = async () => {
+      showChefFreddie();
+      setDailyTip(getDailyTip());
+      
+      try {
+        setLoading(true);
+        
+        // Use a mock recipe for the featured recipe with pork chops
+        const porkChopRecipe = {
+          ...mockRecipes[0],
+          id: 'porkchop-featured',
+          title: 'Garlic Butter Pork Chops',
+          description: 'Juicy pork chops seared to perfection and basted with garlic herb butter. A quick and delicious weeknight dinner option.',
+          cookingTime: 25,
+          servings: 4,
+          difficulty: 'easy' as 'easy' | 'medium' | 'hard',
+          cuisine: 'American',
+          imageUrl: 'https://images.unsplash.com/photo-1432139509613-5c4255815697?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=800&q=80',
+          instructions: [
+            "Pat pork chops dry with paper towels and season generously with salt and pepper on both sides.",
+            "Heat a large skillet over medium-high heat. Add 1 tablespoon olive oil.",
+            "Once hot, add pork chops and sear for 4-5 minutes on each side until golden brown and cooked through (internal temperature of 145°F).",
+            "Reduce heat to medium-low. Add 3 tablespoons butter, 4 minced garlic cloves, and 1 tablespoon fresh herbs (rosemary, thyme, or sage).",
+            "Tilt the pan and spoon the garlic herb butter over the pork chops continuously for 1-2 minutes.",
+            "Remove from heat and let rest for 5 minutes before serving.",
+            "Serve with your favorite sides and enjoy!"
+          ]
+        };
+        
+        console.log('Using pork chop recipe for featured recipe');
+        setFeaturedRecipe(porkChopRecipe);
+        
+        // Still load all recipes for other parts of the dashboard
+        const recipes = await parseCSVRecipes();
+        console.log('Loaded recipes:', recipes.length);
+        setAllRecipes(recipes);
+      } catch (error) {
+        console.error('Error loading recipes:', error);
+      } finally {
+        setLoading(false);
       }
     };
     
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
-  
+    initDashboard();
+  }, [showChefFreddie]);
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -44,11 +75,6 @@ const Dashboard: NextPage = () => {
     } catch (error) {
       console.error('Logout failed:', error);
     }
-  };
-
-  const navigateToProfile = () => {
-    setDropdownOpen(false);
-    router.push('/profile');
   };
 
   const quickActions = [
@@ -67,11 +93,11 @@ const Dashboard: NextPage = () => {
       bgColor: 'bg-satriales-500'
     },
     {
-      name: 'Butcher Shop',
-      description: 'Connect with local meat suppliers',
-      icon: '🥩',
-      link: '/butcher-shop',
-      bgColor: 'bg-red-500'
+      name: 'The Grange Marketplace',
+      description: 'Connect with local farmers and food producers',
+      icon: '🧺',
+      link: '/the-grange',
+      bgColor: 'bg-green-600'
     },
     {
       name: "Chef's Corner",
@@ -107,49 +133,6 @@ const Dashboard: NextPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header with Profile Dropdown */}
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-butcher-800">Dashboard</h1>
-        <div className="relative" ref={dropdownRef}>
-          <button
-            onClick={() => setDropdownOpen(!dropdownOpen)}
-            className="px-4 py-2 bg-butcher-600 text-white rounded-lg hover:bg-butcher-700 transition-colors flex items-center"
-            aria-expanded={dropdownOpen}
-            aria-haspopup="true"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-            </svg>
-            {user?.firstName || 'Profile'}
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-1" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
-            </svg>
-          </button>
-          
-          {/* Dropdown Menu */}
-          {dropdownOpen && (
-            <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10">
-              <div className="py-1 rounded-md bg-white shadow-xs">
-                <Link href="/temp-profile" legacyBehavior>
-                  <a 
-                    className="block px-4 py-2 text-sm text-butcher-700 hover:bg-butcher-100"
-                    onClick={() => setDropdownOpen(false)}
-                  >
-                    Profile Settings
-                  </a>
-                </Link>
-                <button
-                  onClick={handleLogout}
-                  className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                >
-                  Sign Out
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-      
       {/* Welcome Message with Daily Tip */}
       <div className="bg-white rounded-lg shadow-vintage p-6 mb-8">
         <div className="flex items-center space-x-4">
@@ -193,24 +176,203 @@ const Dashboard: NextPage = () => {
             <div className="p-4">
               <h3 className="text-lg font-semibold text-butcher-800">{action.name}</h3>
               <p className="text-sm text-butcher-600">{action.description}</p>
-              {action.name === 'Butcher Shop' && (
-                <span className="text-sm text-butcher-500">Coming Soon →</span>
+              {action.name === 'The Grange Marketplace' && action.link === '/the-grange' && (
+                <span className="text-sm text-green-600">New! →</span>
               )}
             </div>
           </Link>
         ))}
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         {stats.map((stat) => (
           <div key={stat.name} className="bg-white rounded-lg shadow-vintage p-6">
-            <h4 className="text-sm font-medium text-butcher-500">{stat.name}</h4>
-            <p className="mt-2 text-3xl font-semibold text-butcher-800">{stat.value}</p>
+            <p className="text-sm font-medium text-butcher-500 truncate">{stat.name}</p>
+            <p className="mt-1 text-3xl font-semibold text-butcher-900">{stat.value}</p>
           </div>
         ))}
       </div>
-
+      
+      {/* Featured Recipe Section */}
+      {loading ? (
+        <div className="bg-white rounded-lg shadow-vintage p-6 mb-8">
+          <div className="flex justify-center items-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-satriales-600"></div>
+          </div>
+        </div>
+      ) : featuredRecipe ? (
+        <div className="bg-white rounded-lg shadow-vintage p-6 mb-8">
+          <h3 className="text-lg font-semibold text-butcher-800 mb-4">
+            Featured Recipe of the Day
+            <span className="ml-2 text-sm text-butcher-500">Changes daily</span>
+          </h3>
+          <div className="flex flex-col md:flex-row">
+            <div className="md:w-1/3 mb-4 md:mb-0 md:mr-6">
+              <div className="bg-vintage-100 h-48 rounded-lg flex items-center justify-center">
+                {featuredRecipe.imageUrl ? (
+                  <img
+                    src={featuredRecipe.imageUrl}
+                    alt={featuredRecipe.title}
+                    className="w-full h-full object-cover rounded-lg"
+                  />
+                ) : (
+                  <span className="text-4xl">🍽️</span>
+                )}
+              </div>
+            </div>
+            <div className="md:w-2/3">
+              <h4 className="text-xl font-semibold text-butcher-800 mb-2">{featuredRecipe.title}</h4>
+              <p className="text-butcher-600 mb-4">{featuredRecipe.description}</p>
+              <div className="flex space-x-4 text-sm">
+                <span className="text-butcher-500">⏱️ {featuredRecipe.cookingTime} mins</span>
+                <span className="text-butcher-500">👥 {featuredRecipe.servings} servings</span>
+                <span className="text-butcher-500">🔥 {featuredRecipe.difficulty}</span>
+                {featuredRecipe.cuisine && (
+                  <span className="text-butcher-500">🌍 {featuredRecipe.cuisine}</span>
+                )}
+              </div>
+              <div className="mt-4">
+                <button 
+                  onClick={() => setShowRecipeModal(true)}
+                  className="px-4 py-2 bg-satriales-500 text-white rounded-lg hover:bg-satriales-600 transition-colors inline-block"
+                >
+                  View Recipe
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        <div className="bg-white rounded-lg shadow-vintage p-6 mb-8">
+          <h3 className="text-lg font-semibold text-butcher-800 mb-4">
+            Featured Recipe of the Day
+          </h3>
+          <p className="text-butcher-600 py-4">No featured recipe available today. Check back tomorrow!</p>
+        </div>
+      )}
+      
+      {/* Featured Recipe Modal */}
+      {showRecipeModal && featuredRecipe && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white p-4 border-b border-gray-200 flex justify-between items-center">
+              <h3 className="text-xl font-semibold text-butcher-800">{featuredRecipe.title}</h3>
+              <button 
+                onClick={() => setShowRecipeModal(false)}
+                className="p-1.5 rounded-full bg-vintage-100 hover:bg-vintage-200 text-butcher-600 transition-colors"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <div className="flex flex-col md:flex-row gap-6 mb-6">
+                <div className="md:w-1/3">
+                  <div className="h-60 bg-gray-100 rounded-lg overflow-hidden">
+                    <img 
+                      src={featuredRecipe.imageUrl || '/images/placeholder-recipe.jpg'} 
+                      alt={featuredRecipe.title}
+                      className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/images/placeholder-recipe.jpg';
+                      }}
+                    />
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-butcher-600">Cooking Time:</span>
+                      <span className="text-sm font-medium text-butcher-800">{featuredRecipe.cookingTime} mins</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-butcher-600">Servings:</span>
+                      <span className="text-sm font-medium text-butcher-800">{featuredRecipe.servings}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-butcher-600">Difficulty:</span>
+                      <span className="text-sm font-medium text-butcher-800">
+                        {featuredRecipe.difficulty.charAt(0).toUpperCase() + featuredRecipe.difficulty.slice(1)}
+                      </span>
+                    </div>
+                    {featuredRecipe.cuisine && (
+                      <div className="flex justify-between">
+                        <span className="text-sm text-butcher-600">Cuisine:</span>
+                        <span className="text-sm font-medium text-butcher-800">{featuredRecipe.cuisine}</span>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="mt-6">
+                    {!savedRecipes.some(r => r.id === featuredRecipe.id) ? (
+                      <button 
+                        onClick={() => {
+                          addToSaved(featuredRecipe);
+                          alert('Recipe saved to cookbook!');
+                        }}
+                        className="w-full px-4 py-2 bg-porkchop-600 text-white rounded-lg hover:bg-porkchop-700 transition-colors"
+                      >
+                        Save to Cookbook
+                      </button>
+                    ) : (
+                      <button 
+                        disabled
+                        className="w-full px-4 py-2 bg-gray-100 text-gray-500 rounded-lg cursor-default"
+                      >
+                        Already in Cookbook
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                <div className="md:w-2/3">
+                  <p className="text-butcher-600 mb-6">{featuredRecipe.description}</p>
+                  
+                  <div className="mb-6">
+                    <h4 className="text-lg font-medium text-butcher-800 mb-3">Ingredients</h4>
+                    <ul className="space-y-2">
+                      {featuredRecipe.ingredients.map((ingredient, idx) => (
+                        <li key={idx} className="flex items-start">
+                          <span className="inline-block w-2 h-2 rounded-full bg-porkchop-500 mt-2 mr-2"></span>
+                          <span className="text-butcher-600">
+                            {typeof ingredient === 'string' 
+                              ? ingredient 
+                              : `${ingredient.amount} ${ingredient.unit} ${ingredient.name}${ingredient.preparation ? `, ${ingredient.preparation}` : ''}`
+                            }
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h4 className="text-lg font-medium text-butcher-800 mb-3">Instructions</h4>
+                    <ol className="space-y-4">
+                      {featuredRecipe.instructions.map((step, idx) => (
+                        <li key={idx} className="flex">
+                          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-porkchop-100 text-porkchop-600 flex items-center justify-center font-semibold mr-3">
+                            {idx + 1}
+                          </div>
+                          <p className="text-butcher-600 flex-1 pt-1">{step}</p>
+                        </li>
+                      ))}
+                    </ol>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="mt-8 pt-6 border-t border-gray-200">
+                <h4 className="text-lg font-medium text-butcher-800 mb-3">Featured Recipe</h4>
+                <p className="text-butcher-600">
+                  This recipe is today's featured recipe. Check back tomorrow for a new featured recipe!
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Recent Activity */}
       <div className="bg-white rounded-lg shadow-vintage p-6">
         <h3 className="text-lg font-semibold text-butcher-800 mb-4">Recent Activity</h3>
@@ -226,44 +388,6 @@ const Dashboard: NextPage = () => {
         </div>
       </div>
 
-      {/* Featured Recipe Section (if available) */}
-      {savedRecipes.length > 0 && (
-        <div className="bg-white rounded-lg shadow-vintage p-6 mt-8">
-          <h3 className="text-lg font-semibold text-butcher-800 mb-4">Featured Recipe</h3>
-          <div className="flex flex-col md:flex-row">
-            <div className="md:w-1/3 mb-4 md:mb-0 md:mr-6">
-              <div className="bg-vintage-100 h-48 rounded-lg flex items-center justify-center">
-                {savedRecipes[0].imageUrl ? (
-                  <img
-                    src={savedRecipes[0].imageUrl}
-                    alt={savedRecipes[0].title}
-                    className="w-full h-full object-cover rounded-lg"
-                  />
-                ) : (
-                  <span className="text-4xl">🍽️</span>
-                )}
-              </div>
-            </div>
-            <div className="md:w-2/3">
-              <h4 className="text-xl font-semibold text-butcher-800 mb-2">{savedRecipes[0].title}</h4>
-              <p className="text-butcher-600 mb-4">{savedRecipes[0].description}</p>
-              <div className="flex space-x-4 text-sm">
-                <span className="text-butcher-500">⏱️ {savedRecipes[0].cookingTime} mins</span>
-                <span className="text-butcher-500">👥 {savedRecipes[0].servings} servings</span>
-                <span className="text-butcher-500">🔥 {savedRecipes[0].difficulty}</span>
-              </div>
-              <div className="mt-4">
-                <Link 
-                  href={`/recipe/${savedRecipes[0].id}`} 
-                  className="px-4 py-2 bg-satriales-500 text-white rounded-lg hover:bg-satriales-600 transition-colors inline-block"
-                >
-                  View Recipe
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

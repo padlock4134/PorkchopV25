@@ -2,8 +2,44 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useSavedRecipes } from '../context/SavedRecipesContext';
 import { useButcherTheme } from './ButcherThemeProvider';
-import MeatTag from './MeatTag';
 import type { Recipe } from '../utils/recipeData';
+
+// Simple tag component for both difficulty and cuisine
+const RecipeTag: React.FC<{
+  children: React.ReactNode;
+  color?: string;
+  rotate?: boolean;
+}> = ({ children, color = 'brown', rotate = true }) => {
+  const theme = useButcherTheme();
+  
+  const getTagColor = () => {
+    switch (color) {
+      case 'green':
+        return '#4CAF50';
+      case 'yellow':
+        return '#FFC107';
+      case 'red':
+        return '#F44336';
+      case 'brown':
+      default:
+        return theme.colors.secondary;
+    }
+  };
+  
+  return (
+    <div 
+      className="inline-flex items-center justify-center px-2 py-1 text-xs font-medium rounded-md"
+      style={{
+        backgroundColor: theme.colors.tertiary,
+        color: getTagColor(),
+        border: `1px solid ${getTagColor()}`,
+        transform: rotate ? 'rotate(-2deg)' : 'none'
+      }}
+    >
+      {children}
+    </div>
+  );
+};
 
 interface RecipeCardProps {
   recipe: Recipe;
@@ -80,14 +116,22 @@ const ButcherRecipeCard: React.FC<RecipeCardProps> = ({
             />
             {/* Difficulty label */}
             <div className="absolute top-3 right-3">
-              <MeatTag 
+              <RecipeTag 
                 color={getDifficultyColor(recipe.difficulty)}
-                size="small"
-                withRotation
+                rotate={true}
               >
                 {recipe.difficulty}
-              </MeatTag>
+              </RecipeTag>
             </div>
+            
+            {/* Cuisine label */}
+            {recipe.cuisine && (
+              <div className="absolute top-3 left-3">
+                <RecipeTag color="brown">
+                  🌍 {recipe.cuisine}
+                </RecipeTag>
+              </div>
+            )}
           </div>
           
           <div className="p-4">

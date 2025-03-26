@@ -2,9 +2,11 @@ import type { NextPage } from 'next';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import ChefFreddieLogo from '../components/ChefFreddieLogo';
+import { useAuth } from '../context/AuthContext';
 
 const Home: NextPage = () => {
   const router = useRouter();
+  const { user } = useAuth();
 
   const features = [
     { 
@@ -62,16 +64,10 @@ const Home: NextPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <nav className="bg-white shadow-sm">
+      {/* Login/Signup Buttons - No Navigation Bar */}
+      <div className="bg-white shadow-sm py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <div className="w-10 h-10">
-                <ChefFreddieLogo />
-              </div>
-              <span className="ml-2 text-xl font-bold text-butcher-800">PorkChop</span>
-            </div>
+          <div className="flex justify-end">
             <div className="flex items-center space-x-4">
               <Link href="/login" legacyBehavior>
                 <a className="text-butcher-600 hover:text-butcher-800 transition-colors">Log In</a>
@@ -84,7 +80,7 @@ const Home: NextPage = () => {
             </div>
           </div>
         </div>
-      </nav>
+      </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {/* Hero Section */}

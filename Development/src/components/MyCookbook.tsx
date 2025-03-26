@@ -7,6 +7,7 @@ import type { Recipe } from '../utils/recipeData';
 const RecipeCard: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
   const { removeFromSaved, collections, addToCollection, removeFromCollection, getRecipeCollections } = useSavedRecipes();
   const [isFlipped, setIsFlipped] = useState(false);
+  const [showRemoveConfirm, setShowRemoveConfirm] = useState(false);
 
   const handleRemove = () => {
     removeFromSaved(recipe.id);
@@ -32,6 +33,34 @@ const RecipeCard: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
       className="relative"
       style={{ perspective: '1000px', minHeight: '400px' }}
     >
+      {showRemoveConfirm && (
+        <div className="absolute inset-0 z-10 flex items-center justify-center bg-black bg-opacity-50 rounded-lg">
+          <div className="bg-white p-4 rounded-lg shadow-lg max-w-xs w-full">
+            <h4 className="text-lg font-medium text-gray-900 mb-2">Remove Recipe?</h4>
+            <p className="text-sm text-gray-600 mb-4">
+              Are you sure you want to remove "{recipe.title}" from your cookbook?
+            </p>
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setShowRemoveConfirm(false)}
+                className="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-200"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  handleRemove();
+                  setShowRemoveConfirm(false);
+                }}
+                className="px-3 py-1.5 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div 
         className="w-full h-full transition-transform duration-500 transform-gpu preserve-3d"
         style={{ 
@@ -46,7 +75,7 @@ const RecipeCard: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
         >
           <div className="relative h-48 w-full overflow-hidden">
             <img
-              src={`/data/images/recipe stock photos/${recipe.title}.png`}
+              src={recipe.imageUrl || `/data/images/recipe stock photos/${recipe.title}.png`}
               alt={recipe.title}
               className="w-full h-full object-cover"
               onError={(e) => {
@@ -58,6 +87,15 @@ const RecipeCard: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
                 {recipe.difficulty}
               </span>
             </div>
+            <button
+              onClick={() => setShowRemoveConfirm(true)}
+              className="absolute top-0 left-0 m-2 p-1 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
+              title="Remove from cookbook"
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+              </svg>
+            </button>
           </div>
           
           <div className="p-4">
@@ -93,12 +131,6 @@ const RecipeCard: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
                 >
                   View Recipe
                 </button>
-                <button
-                  onClick={handleRemove}
-                  className="inline-flex items-center px-3 py-2 text-sm font-medium text-red-600 hover:text-red-700"
-                >
-                  Remove
-                </button>
               </div>
             </div>
           </div>
@@ -115,14 +147,25 @@ const RecipeCard: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
           <div className="p-6 h-full flex flex-col">
             <div className="flex justify-between items-start mb-4">
               <h4 className="text-xl font-semibold text-gray-900">{recipe.title} Instructions</h4>
-              <button
-                onClick={toggleCard}
-                className="text-gray-400 hover:text-gray-500"
-              >
-                <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => setShowRemoveConfirm(true)}
+                  className="text-red-600 hover:text-red-700"
+                  title="Remove from cookbook"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+                <button
+                  onClick={toggleCard}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
             </div>
 
             <div className="flex-1 overflow-y-auto">
@@ -156,10 +199,18 @@ const RecipeCard: React.FC<{ recipe: Recipe }> = ({ recipe }) => {
             </div>
 
             <div className="mt-4 pt-4 border-t border-gray-200">
-              <div className="flex justify-between items-center text-sm text-gray-500">
-                <span>Servings: {recipe.servings}</span>
-                <span>Time: {recipe.cookingTime} mins</span>
-                <span className="capitalize">Difficulty: {recipe.difficulty}</span>
+              <div className="flex justify-between items-center">
+                <div className="flex items-center space-x-4 text-sm text-gray-500">
+                  <span>Servings: {recipe.servings}</span>
+                  <span>Time: {recipe.cookingTime} mins</span>
+                  <span className="capitalize">Difficulty: {recipe.difficulty}</span>
+                </div>
+                <button
+                  onClick={() => setShowRemoveConfirm(true)}
+                  className="px-3 py-1.5 bg-red-100 text-red-700 hover:bg-red-200 rounded-md text-sm font-medium transition-colors"
+                >
+                  Remove Recipe
+                </button>
               </div>
             </div>
           </div>
@@ -263,4 +314,4 @@ const MyCookbook: React.FC = () => {
   );
 };
 
-export default MyCookbook; 
+export default MyCookbook;

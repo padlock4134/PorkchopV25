@@ -22,11 +22,11 @@ const Dashboard: React.FC = () => {
       bgColor: 'bg-pink-500'
     },
     {
-      name: 'Butcher Shop',
-      description: 'Connect with local meat suppliers',
-      icon: '🥩',
-      link: '/butcher-shop',
-      bgColor: 'bg-red-500'
+      name: 'The Grange Marketplace',
+      description: 'Connect with local farmers and food producers',
+      icon: '🧺',
+      link: '/the-grange',
+      bgColor: 'bg-green-600'
     },
     {
       name: "Chef's Market",
@@ -91,8 +91,8 @@ const Dashboard: React.FC = () => {
             <div className="p-4">
               <h3 className="text-lg font-semibold text-gray-900">{action.name}</h3>
               <p className="text-sm text-gray-600">{action.description}</p>
-              {action.name === 'Butcher Shop' && (
-                <span className="text-sm text-gray-500">Coming Soon →</span>
+              {action.name === 'The Grange Marketplace' && (
+                <span className="text-sm text-green-600">New! →</span>
               )}
             </div>
           </Link>

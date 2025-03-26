@@ -4,7 +4,9 @@ import { AuthProvider } from '../context/AuthContext';
 import { SavedRecipesProvider } from '../context/SavedRecipesContext';
 import { ChefFreddieProvider } from '../context/ChefFreddieContext';
 import { ChallengeProvider } from '../context/ChallengeContext';
+import { AchievementsProvider } from '../context/AchievementsContext';
 import GlobalChefFreddie from '../components/GlobalChefFreddie';
+import Navigation from '../components/Navigation';
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
@@ -12,8 +14,13 @@ function MyApp({ Component, pageProps }: AppProps) {
       <SavedRecipesProvider>
         <ChefFreddieProvider>
           <ChallengeProvider>
-            <Component {...pageProps} />
-            <GlobalChefFreddie />
+            <AchievementsProvider>
+              {Component.displayName !== 'Auth' && <Navigation />}
+              <div className="pt-20"> 
+                <Component {...pageProps} />
+              </div>
+              <GlobalChefFreddie />
+            </AchievementsProvider>
           </ChallengeProvider>
         </ChefFreddieProvider>
       </SavedRecipesProvider>

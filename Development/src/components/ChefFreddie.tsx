@@ -62,7 +62,7 @@ export const ChefFreddieProvider: React.FC<{ children: React.ReactNode }> = ({ c
       '/dashboard': 'Welcome to the dashboard! Here you can explore recipes and manage your cooking journey.',
       '/create-recipe': 'Here you can create your own recipes. Add ingredients, steps, and more!',
       '/my-cookbook': 'View and manage your saved recipes in your personal cookbook.',
-      '/butcher-shop': 'Explore and purchase ingredients from the butcher shop.',
+      '/the-grange': 'Explore local farmers, butchers, and specialty food producers at The Grange Marketplace.',
       '/chefs-corner': 'Join the community, share your passion, and grow as a chef!',
       '/profile': 'Manage your profile, preferences, and account settings.',
     };
@@ -142,20 +142,28 @@ export const ChefFreddieProvider: React.FC<{ children: React.ReactNode }> = ({ c
           }
         ]
       },
-      '/butcher-shop': {
-        description: 'Welcome to the Butcher Shop! Connect with local butchers and specialty meat suppliers.',
+      '/the-grange': {
+        description: 'Welcome to The Grange Marketplace! Connect with local farmers, butchers, and specialty food producers.',
         suggestedQuestions: [
-          'How does the butcher shop work?',
-          'When will this feature be available?',
-          'What types of meats will be offered?'
+          'How does The Grange Marketplace work?',
+          'What types of products are available?',
+          'How do I connect with local producers?'
         ],
         features: [
           {
             name: 'Local Partnerships',
             suggestedQuestions: [
-              'How are local butchers selected?',
-              'Can I request specific butchers?',
+              'How are local producers selected?',
+              'Can I request specific producers?',
               'What is the delivery area?'
+            ]
+          },
+          {
+            name: 'Product Categories',
+            suggestedQuestions: [
+              'What produce is in season?',
+              'How do I find specialty dairy products?',
+              'Where can I find artisanal baked goods?'
             ]
           }
         ]

@@ -28,11 +28,11 @@ const ButcherDashboard: React.FC = () => {
       bgColor: 'bg-pink-500'
     },
     {
-      name: 'Butcher Shop',
-      description: 'Connect with local meat suppliers',
-      icon: '🥩',
-      link: '/butcher-shop',
-      bgColor: 'bg-satriales-600'
+      name: 'The Grange Marketplace',
+      description: 'Connect with local farmers and food producers',
+      icon: '🧺',
+      link: '/the-grange',
+      bgColor: 'bg-green-600'
     },
     {
       name: "Chef's Corner",
@@ -120,7 +120,7 @@ const ButcherDashboard: React.FC = () => {
               className="block transition-all duration-200 hover:transform hover:scale-105"
             >
               <ButcherCard
-                variant={action.name === 'Butcher Shop' ? 'meat' : 'paper'}
+                variant={action.name === 'The Grange Marketplace' ? 'paper' : 'paper'}
                 elevation="raised"
                 withBorder
               >
@@ -134,9 +134,9 @@ const ButcherDashboard: React.FC = () => {
                   {action.name}
                 </h3>
                 <p className="text-sm text-butcher-600">{action.description}</p>
-                {action.name === 'Butcher Shop' && (
-                  <MeatTag color="red" size="small" className="mt-3">
-                    Coming Soon
+                {action.name === 'The Grange Marketplace' && (
+                  <MeatTag color="green" size="small" className="mt-3">
+                    New!
                   </MeatTag>
                 )}
               </ButcherCard>
