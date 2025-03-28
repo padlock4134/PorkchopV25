@@ -2,8 +2,7 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/login": "pages/login.js",
-  "/create-recipe": "pages/create-recipe.js",
   "/dashboard": "pages/dashboard.js",
-  "/api/recipes": "pages/api/recipes.js"
+  "/api/recipes": "pages/api/recipes.js",
+  "/create-recipe": "pages/create-recipe.js"
 }
