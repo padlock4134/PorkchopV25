@@ -25,6 +25,16 @@ globalThis.__BUILD_MANIFEST = {
       "static/chunks/main.js",
       "static/chunks/pages/create-recipe.js"
     ],
+    "/dashboard": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/dashboard.js"
+    ],
+    "/recipe/[id]": [
+      "static/chunks/webpack.js",
+      "static/chunks/main.js",
+      "static/chunks/pages/recipe/[id].js"
+    ],
     "/signup": [
       "static/chunks/webpack.js",
       "static/chunks/main.js",

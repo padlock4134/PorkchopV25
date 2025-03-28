@@ -5,5 +5,6 @@
   "/signup": "pages/signup.js",
   "/create-recipe": "pages/create-recipe.js",
   "/api/recipes": "pages/api/recipes.js",
+  "/recipe/[id]": "pages/recipe/[id].js",
   "/dashboard": "pages/dashboard.js"
 }

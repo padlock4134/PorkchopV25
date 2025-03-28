@@ -2,13 +2,32 @@ import React, { useState } from 'react';
 import { Recipe } from '../utils/recipeData';
 
 interface RecipeCardProps {
-  recipe: Recipe;
+  recipe: Recipe | undefined;
   onClick: (recipe: Recipe) => void;
+  showMatchPercentage?: boolean;
+  rank?: number;
+  className?: string;
 }
 
-const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onClick }) => {
+const RecipeCard: React.FC<RecipeCardProps> = ({
+  recipe,
+  onClick, 
+  showMatchPercentage = false,
+  rank, // Add this
+  className= '' //Add this
+}) => {
   const [isFlipped, setIsFlipped] = useState(false);
-  
+
+  // Early return for undefined recipe
+  if (!recipe) {
+    return (
+      <div className={`relative w-full h-[450px] bg-white rounded-lg shadow-md p-6 ${className}`}>
+        <div className="h-48 bg-gray-100 mb-4 rounded"></div>
+        <div className="h-6 bg-gray-100 w-3/4 mb-4 rounded"></div>
+        <div className="h-4 bg-gray-100 w-1/2 rounded mb-3"></div>
+      </div>
+    );
+  }
   // Handle card flip - prevent the Promise issue by keeping this synchronous
   const handleFlip = (e: React.MouseEvent) => {
     e.stopPropagation(); // Prevent triggering the onClick event of the parent
@@ -81,10 +100,16 @@ const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onClick }) => {
   
   return (
     <div 
-      className="relative w-full h-[450px]"
+      className={`relative w-full h-[450px] ${className}`}
       style={{ perspective: '1000px' }}
       onClick={handleCardClick}
     >
+      {rank && ( //Add this block
+        <div className="absolute top-2 right-2 bg-black text-white px-2 py-1 rounded">
+          {rank}
+        </div>
+      )}
+
       <div 
         className="w-full h-full transition-all duration-500"
         style={{ 

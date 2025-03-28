@@ -104,17 +104,6 @@ export default function Navigation() {
               {user?.firstName?.charAt(0) || 'P'}
             </Link>
 
-            {/* Recipes Link */}
-            <Link
-              href="/recipes"
-              className={`${
-                router.pathname === '/recipes'
-                  ? 'text-gray-900'
-                  : 'text-gray-500 hover:text-gray-700'
-              } inline-flex items-center px-1 pt-1 text-sm font-medium`}
-            >
-              Recipes
-            </Link>
           </div>
           <div className="-mr-2 flex md:hidden">
             <button

@@ -582,9 +582,9 @@ const CreateRecipe: React.FC = () => {
       {/* Current Step Content */}
       <div className="bg-white rounded-lg shadow-vintage p-6">
         <h2 className="text-xl font-semibold text-butcher-800 mb-4">
-          {steps[currentStep].title}
+          {steps[currentStep].title|| 'Step Title'}
+          <p className="text-butcher-600 mb-6">{steps[currentStep]?.description || 'Step Description'}</p>
         </h2>
-        <p className="text-butcher-600 mb-6">{steps[currentStep].description}</p>
 
         {currentStep === steps.length - 1 ? (
           <div className="space-y-6">
