@@ -6,9 +6,20 @@ import CreateRecipe from '../components/CreateRecipe';
 import { useAchievementTracker } from '../utils/achievementTracker';
 import Link from 'next/link';
 import { withAuth } from '../components/withAuth';
+import { useRouter } from 'next/router';
+import RecipeMatching from '../components/RecipeMatching';
+
+interface Recipe {
+  instructions: string[] | string | undefined;
+}
+
+interface RecipeMatchingProps {
+  recipe: Recipe;
+}
 
 const CreateRecipePage: NextPage = () => {
   const { setCurrentRoute, showChefFreddie } = useChefFreddie();
+  const router = useRouter();
   
   // Safely try to use achievement tracker, but don't crash if it's not available
   let trackRecipeCreation: () => void = () => {};
@@ -18,6 +29,10 @@ const CreateRecipePage: NextPage = () => {
   } catch (error) {
     console.warn('Achievement tracking not available:', error);
   }
+
+  const handleFindMatches = () => {
+    router.push('/recipes');
+  };
 
   useEffect(() => {
     setCurrentRoute('/create-recipe');
@@ -32,10 +47,16 @@ const CreateRecipePage: NextPage = () => {
           Select ingredients and cookware to find matching recipes or create your own custom recipe.
         </p>
         
-        {/* Ingredient selection component */}
         <CreateRecipe />
         
-        <div className="mt-6">
+        <div className="mt-6 flex gap-4">
+          <button
+            onClick={handleFindMatches}
+            className="bg-butcher-500 text-white px-4 py-2 rounded hover:bg-butcher-600"
+          >
+            Find Matches
+          </button>
+          
           <Link href="/dashboard" className="text-porkchop-600 hover:text-porkchop-800">
             ← Back to Dashboard
           </Link>

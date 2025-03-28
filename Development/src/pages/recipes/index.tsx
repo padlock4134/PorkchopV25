@@ -10,6 +10,9 @@ const RecipesPage: NextPage = () => {
   const [recipes, setRecipes] = useState<Recipe[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const handleFindMatches = () => {
+    router.push('/recipes');
+  };
 
   useEffect(() => {
     const fetchRecipes = async () => {
