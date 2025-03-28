@@ -1,6 +1,5 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import { PrismaClient } from '@prisma/client';
-
 const prisma = new PrismaClient();
 
 export default async function handler(
@@ -8,49 +7,57 @@ export default async function handler(
   res: NextApiResponse
 ) {
   const { id } = req.query;
-  const { method } = req;
 
-  if (typeof id !== 'string') {
-    return res.status(400).json({ error: 'Invalid recipe ID' });
+  if (!id || typeof id !== 'string') {
+    return res.status(400).json({ error: 'Recipe ID is required' });
   }
 
   try {
-    switch (method) {
-      case 'GET':
-        const recipe = await prisma.recipes.findUnique({
-          where: { id },
-          include: {
-            images: true,
-            ingredients: true,
-            instructions: true
-          }
-        });
-        
-        if (!recipe) {
-          return res.status(404).json({ error: 'Recipe not found' });
-        }
-        
-        return res.status(200).json(recipe);
+    if (req.method === 'GET') {
+      // Get a single recipe
+      const recipe = await prisma.recipe.findUnique({
+        where: {
+          id: id,
+        },
+        include: {
+          ingredients: true, // This needs to match your Prisma schema relationship
+          requiredCookware: true,
+          proteinTags: true,
+          veggieTags: true,
+          herbTags: true,
+        },
+      });
 
-      case 'PUT':
-        const updatedRecipe = await prisma.recipes.update({
-          where: { id },
-          data: req.body
-        });
-        return res.status(200).json(updatedRecipe);
+      if (!recipe) {
+        return res.status(404).json({ error: 'Recipe not found' });
+      }
 
-      case 'DELETE':
-        await prisma.recipes.delete({
-          where: { id }
-        });
-        return res.status(204).end();
+      return res.status(200).json(recipe);
+    } else if (req.method === 'PUT') {
+      // Update a recipe
+      const updatedRecipe = await prisma.recipe.update({
+        where: {
+          id: id,
+        },
+        data: req.body,
+      });
 
-      default:
-        res.setHeader('Allow', ['GET', 'PUT', 'DELETE']);
-        return res.status(405).end(`Method ${method} Not Allowed`);
+      return res.status(200).json(updatedRecipe);
+    } else if (req.method === 'DELETE') {
+      // Delete a recipe
+      await prisma.recipe.delete({
+        where: {
+          id: id,
+        },
+      });
+
+      return res.status(204).end();
+    } else {
+      // Method not allowed
+      return res.status(405).json({ error: 'Method not allowed' });
     }
   } catch (error) {
-    console.error('Error in recipe API:', error);
-    return res.status(500).json({ error: 'Internal Server Error' });
+    console.error('Recipe API error:', error);
+    return res.status(500).json({ error: 'Internal server error' });
   }
 }

@@ -9,6 +9,7 @@ import { ChefFreddieProvider } from '../context/ChefFreddieContext';
 import { ChallengeProvider } from '../context/ChallengeContext';
 import { SubscriptionProvider } from '../context/SubscriptionContext';
 import { AchievementsProvider } from '../context/AchievementsContext';
+import { UserProvider } from '../context/UserContext';
 import Navigation from '../components/Navigation';
 import GlobalChefFreddie from '../components/GlobalChefFreddie';
 
@@ -51,13 +52,15 @@ export default function MyApp({ Component, pageProps }: AppProps) {
             <ChallengeProvider>
               <SubscriptionProvider>
                 <AchievementsProvider>
-                  <div className="min-h-screen bg-vintage-50">
-                    {!isAuthPage && <Navigation />}
-                    <main className={!isAuthPage ? 'pt-20' : ''}>
-                      <Component {...pageProps} />
-                    </main>
-                    <GlobalChefFreddie />
-                  </div>
+                  <UserProvider>
+                    <div className="min-h-screen bg-vintage-50">
+                      {!isAuthPage && <Navigation />}
+                      <main className={!isAuthPage ? 'pt-20' : ''}>
+                        <Component {...pageProps} />
+                      </main>
+                      <GlobalChefFreddie />
+                    </div>
+                  </UserProvider>
                 </AchievementsProvider>
               </SubscriptionProvider>
             </ChallengeProvider>

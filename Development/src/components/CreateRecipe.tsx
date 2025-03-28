@@ -568,7 +568,7 @@ const CreateRecipe: React.FC = () => {
         {currentStep === steps.length - 1 ? (
           <div className="space-y-6">
             {showRecipeMatching && (
-              <RecipeMatching userRecipes={matchedRecipes} />
+              <RecipeMatching recipes={matchedRecipes} />
             )}
           </div>
         ) : (
