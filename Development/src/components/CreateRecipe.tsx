@@ -415,9 +415,28 @@ const CreateRecipe: React.FC = () => {
           throw new Error('Failed to fetch recipes');
         }
         const allRecipes = await response.json();
-
+  
+        // Add your logging here
+        console.log('Selected Items:', selectedItems);
+        console.log('All Recipes:', allRecipes);
+  
         // Filter recipes based on selected ingredients
         const matches = allRecipes.filter((recipe: Recipe) => {
+          console.log('Filtering Recipe:', {
+            recipe: recipe.title,
+            proteins: {
+              selected: selectedItems.proteins,
+              recipeProteinTags: recipe.proteinTags,
+              hasMatch: selectedItems.proteins.some(p => recipe.proteinTags.includes(p))
+            },
+            vegetables: {
+              selected: selectedItems.vegetables,
+              recipeVeggieTags: recipe.veggieTags,
+              hasMatch: selectedItems.vegetables.some(v => recipe.veggieTags.includes(v))
+            },
+            // Add similar logging for herbs and cookware
+          });
+  
           const hasProtein = selectedItems.proteins.length === 0 || 
             selectedItems.proteins.some(p => recipe.proteinTags.includes(p));
           const hasVeggies = selectedItems.vegetables.length === 0 || 
@@ -426,10 +445,12 @@ const CreateRecipe: React.FC = () => {
             selectedItems.grainsAndSpices.some(h => recipe.herbTags.includes(h));
           const hasCookware = selectedItems.cookware.length === 0 || 
             selectedItems.cookware.some(c => recipe.cookware.includes(c));
-
+  
           return hasProtein && hasVeggies && hasHerbs && hasCookware;
         });
-
+  
+        console.log('Matched Recipes:', matches);
+  
         setMatchedRecipes(matches);
         setShowRecipeMatching(true);
         setCurrentStep(currentStep + 1);
@@ -568,7 +589,7 @@ const CreateRecipe: React.FC = () => {
         {currentStep === steps.length - 1 ? (
           <div className="space-y-6">
             {showRecipeMatching && (
-              <RecipeMatching recipes={matchedRecipes} />
+              <RecipeMatching key={matchedRecipes[0]?.id} recipe={matchedRecipes[0]} onClick={handleRecipeSelect}/>
             )}
           </div>
         ) : (
