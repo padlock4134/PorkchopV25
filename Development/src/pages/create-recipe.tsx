@@ -1,13 +1,23 @@
+import React from 'react';
 import type { NextPage } from 'next';
 import { useEffect } from 'react';
 import { useChefFreddie } from '../context/ChefFreddieContext';
 import CreateRecipe from '../components/CreateRecipe';
 import { useAchievementTracker } from '../utils/achievementTracker';
 import Link from 'next/link';
+import { withAuth } from '../components/withAuth';
 
 const CreateRecipePage: NextPage = () => {
   const { setCurrentRoute, showChefFreddie } = useChefFreddie();
-  const { trackRecipeCreation } = useAchievementTracker();
+  
+  // Safely try to use achievement tracker, but don't crash if it's not available
+  let trackRecipeCreation: () => void = () => {};
+  try {
+    const achievementTracker = useAchievementTracker();
+    trackRecipeCreation = achievementTracker.trackRecipeCreation;
+  } catch (error) {
+    console.warn('Achievement tracking not available:', error);
+  }
 
   useEffect(() => {
     setCurrentRoute('/create-recipe');
@@ -35,4 +45,4 @@ const CreateRecipePage: NextPage = () => {
   );
 };
 
-export default CreateRecipePage;
+export default withAuth(CreateRecipePage);

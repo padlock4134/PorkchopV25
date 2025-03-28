@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useRouter } from 'next/router';
 import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 import ChefFreddieLogo from '../components/ChefFreddieLogo';
+import { GoogleLogin } from '@react-oauth/google';
 
 export default function SignUp() {
   const router = useRouter();
-  const { signup, isLoading, error: contextError } = useAuth();
+  const { signup, loginWithGoogle, isLoading, error: contextError } = useAuth();
   const [localError, setLocalError] = useState('');
   const [formData, setFormData] = useState({
     firstName: '',
@@ -67,6 +68,35 @@ export default function SignUp() {
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white py-8 px-4 shadow-vintage rounded-lg sm:px-10">
+          {/* Google Sign In Button */}
+          <div className="mb-6">
+            <GoogleLogin
+              onSuccess={(credentialResponse) => {
+                if (credentialResponse.credential) {
+                  loginWithGoogle(credentialResponse.credential)
+                    .then(() => router.push('/dashboard'))
+                    .catch((err) => setLocalError(err.message));
+                }
+              }}
+              onError={() => setLocalError('Google sign in failed')}
+              useOneTap
+              theme="outline"
+              shape="rectangular"
+              text="signup_with"
+              size="large"
+              width="100%"
+            />
+          </div>
+
+          <div className="relative mb-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-butcher-300"></div>
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-butcher-500">Or sign up with email</span>
+            </div>
+          </div>
+
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div>
               <label

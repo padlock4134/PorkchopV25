@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Recipe, parseCSVRecipes } from '../utils/recipeData';
+import { Recipe } from '../utils/recipeData';
 import { useChefFreddie } from '../context/ChefFreddieContext';
 import { useAchievementTracker } from '../utils/achievementTracker';
 import { useAuth } from '../context/AuthContext';
@@ -18,7 +18,21 @@ type SelectedItems = {
 const CreateRecipe: React.FC = () => {
   const router = useRouter();
   const { user } = useAuth();
-  const { trackRecipeCreation, trackIngredientUsed, trackCuisineCreated } = useAchievementTracker();
+  
+  // Safely try to use achievement tracker, but don't crash if it's not available
+  let trackRecipeCreation = () => {};
+  let trackIngredientUsed = (_ingredients: string[]) => {};
+  let trackCuisineCreated = (_cuisine: string) => {};
+  
+  try {
+    const achievementTracker = useAchievementTracker();
+    trackRecipeCreation = achievementTracker.trackRecipeCreation;
+    trackIngredientUsed = achievementTracker.trackIngredientUsed;
+    trackCuisineCreated = achievementTracker.trackCuisineCreated;
+  } catch (error) {
+    console.warn('Achievement tracking not available:', error);
+  }
+
   const [currentStep, setCurrentStep] = useState(0);
   const [matchedRecipes, setMatchedRecipes] = useState<Recipe[]>([]);
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
@@ -39,22 +53,41 @@ const CreateRecipe: React.FC = () => {
     setCurrentRecipe,
   } = useChefFreddie();
 
-  // Load recipes from CSV when component mounts
+  // Load recipes from database when component mounts
   useEffect(() => {
     const loadRecipes = async () => {
       try {
         setLoading(true);
-        const loadedRecipes = await parseCSVRecipes();
+        const response = await fetch('/api/recipes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            endpoint: 'getRecipes',
+            userId: user?.id || 'default'
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch recipes');
+        }
+        const loadedRecipes = await response.json();
         setRecipes(loadedRecipes);
-      } catch (error) {
-        console.error('Error loading recipes:', error);
+      } catch (err) {
+        console.error('Error loading recipes:', err);
+        // Import mockRecipes as a fallback
+        import('../utils/recipeData').then(({ mockRecipes }) => {
+          console.log('Using mock recipes as fallback');
+          setRecipes(mockRecipes);
+        });
       } finally {
         setLoading(false);
       }
     };
 
     loadRecipes();
-  }, []);
+  }, [user?.id]);
 
   // Load user's preferred cuisines when component mounts
   useEffect(() => {
@@ -377,73 +410,35 @@ const CreateRecipe: React.FC = () => {
       // This is the "Find Matches" step
       try {
         setLoading(true);
+        const response = await fetch('/api/recipes');
+        if (!response.ok) {
+          throw new Error('Failed to fetch recipes');
+        }
+        const allRecipes = await response.json();
 
-        // Create a pseudo-recipe from selected ingredients to match against
-        const pseudoRecipe: Recipe = {
-          id: 'temp-recipe',
-          title: 'Selected Ingredients',
-          description: 'Recipe based on selected ingredients',
-          cookingTime: 0,
-          servings: 0,
-          difficulty: 'medium',
-          imageUrl: '',
-          ingredients: [],
-          instructions: [],
-          requiredCookware: selectedItems.cookware,
-          proteinTags: selectedItems.proteins,
-          veggieTags: selectedItems.vegetables,
-          herbTags: selectedItems.grainsAndSpices,
-          pantryTags: selectedItems.pantry,
-          steps: []
-        };
+        // Filter recipes based on selected ingredients
+        const matches = allRecipes.filter((recipe: Recipe) => {
+          const hasProtein = selectedItems.proteins.length === 0 || 
+            selectedItems.proteins.some(p => recipe.proteinTags.includes(p));
+          const hasVeggies = selectedItems.vegetables.length === 0 || 
+            selectedItems.vegetables.some(v => recipe.veggieTags.includes(v));
+          const hasHerbs = selectedItems.grainsAndSpices.length === 0 || 
+            selectedItems.grainsAndSpices.some(h => recipe.herbTags.includes(h));
+          const hasCookware = selectedItems.cookware.length === 0 || 
+            selectedItems.cookware.some(c => recipe.cookware.includes(c));
 
-        // Find recipes that match the selected ingredients
-        const matches = recipes
-          .map(recipe => {
-            const proteinMatches = recipe.proteinTags?.filter(tag => 
-              selectedItems.proteins.includes(tag)
-            )?.length || 0;
-            const veggieMatches = recipe.veggieTags?.filter(tag => 
-              selectedItems.vegetables.includes(tag)
-            )?.length || 0;
-            const herbMatches = recipe.herbTags?.filter(tag => 
-              selectedItems.grainsAndSpices.includes(tag)
-            )?.length || 0;
-            const pantryMatches = recipe.pantryTags?.filter(tag => 
-              selectedItems.pantry.includes(tag)
-            )?.length || 0;
-            const cookwareMatches = recipe.requiredCookware?.filter(item =>
-              selectedItems.cookware.includes(item)
-            )?.length || 0;
+          return hasProtein && hasVeggies && hasHerbs && hasCookware;
+        });
 
-            const totalMatches = proteinMatches + veggieMatches + herbMatches + pantryMatches + cookwareMatches;
-            const totalSelected = selectedItems.proteins.length + selectedItems.vegetables.length + 
-                                 selectedItems.grainsAndSpices.length + selectedItems.pantry.length +
-                                 selectedItems.cookware.length;
-            
-            // Calculate match percentage based on how many selected ingredients match the recipe
-            const matchPercentage = totalSelected > 0 ? Math.round((totalMatches / totalSelected) * 100) : 0;
-            
-            return {
-              ...recipe,
-              matchPercentage
-            };
-          })
-          // Don't filter out recipes with 0% match percentage
-          // Sort by match percentage (highest first)
-          .sort((a, b) => (b.matchPercentage || 0) - (a.matchPercentage || 0));
-        
-        // Always show some recipes, take top 6 matches or all recipes if less than 6
-        const topMatches = matches.slice(0, Math.min(6, matches.length));
-        setMatchedRecipes(topMatches);
-        
-        // Show the RecipeMatching component
+        setMatchedRecipes(matches);
         setShowRecipeMatching(true);
+        setCurrentStep(currentStep + 1);
       } catch (err) {
-        console.error('Error matching recipes:', err);
+        console.error('Error finding matches:', err);
       } finally {
         setLoading(false);
       }
+      return;
     }
     setCurrentStep(prev => prev + 1);
   };
@@ -531,178 +526,105 @@ const CreateRecipe: React.FC = () => {
   };
 
   return (
-    <div className="bg-vintage-50 p-6 rounded-lg">
-      <div className="max-w-7xl mx-auto">
-        <div className="bg-white shadow-vintage rounded-lg p-8 mb-8">
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-2xl font-bold text-butcher-800">{steps[currentStep].title}</h2>
-            <button
-              onClick={handleClearAll}
-              className="px-4 py-2 text-sm font-medium text-satriales-600 hover:text-satriales-700 transition-colors"
+    <div className="space-y-8">
+      {/* Progress Steps */}
+      <div className="flex justify-between items-center mb-8">
+        {steps.map((step, index) => (
+          <div
+            key={step.title}
+            className={`flex items-center ${
+              index < steps.length - 1 ? 'flex-1' : ''
+            }`}
+          >
+            <div
+              className={`w-8 h-8 rounded-full flex items-center justify-center border-2 ${
+                index === currentStep
+                  ? 'bg-butcher-600 text-white border-butcher-600'
+                  : index < currentStep
+                  ? 'bg-butcher-200 border-butcher-200'
+                  : 'border-gray-300 text-gray-500'
+              }`}
             >
-              Clear All
-            </button>
+              {index + 1}
+            </div>
+            {index < steps.length - 1 && (
+              <div
+                className={`flex-1 h-0.5 mx-2 ${
+                  index < currentStep ? 'bg-butcher-200' : 'bg-gray-300'
+                }`}
+              />
+            )}
           </div>
+        ))}
+      </div>
 
-          {currentStep < steps.length - 1 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {(() => {
-                const currentStepObj = steps[currentStep];
-                if (!currentStepObj) {
-                  return null;
-                }
-                
-                const category = currentStepObj.field;
-                
-                // Handle the matches step or if ingredients for the category don't exist
-                if (category === 'matches' || !ingredients[category as keyof typeof ingredients]) {
-                  return null;
-                }
-                
-                const items = ingredients[category as keyof typeof ingredients];
-                const categorizedItems = getItemsByCategory(items);
-                
-                return Object.entries(categorizedItems).map(([subCategory, subItems]) => (
-                  <div key={`${category}-${subCategory}`} className="bg-white rounded-lg shadow-vintage p-6 border border-butcher-100 hover:shadow-vintage-lg transition-all duration-300">
-                    <h3 className="text-lg font-medium text-butcher-700 mb-4 border-b border-butcher-200 pb-2">
-                      {subCategory}
-                    </h3>
-                    <div className="grid grid-cols-2 gap-3">
-                      {subItems.map(item => (
-                        <button
-                          key={item.id}
-                          onClick={() => handleItemSelect(category as keyof SelectedItems, item.id)}
-                          className={`
-                            ${selectedItems[category as keyof SelectedItems].includes(item.id)
-                              ? 'bg-satriales-100 border-satriales-500 text-satriales-700 shadow-sm'
-                              : 'bg-vintage-50 border-butcher-200 text-butcher-700 hover:bg-white hover:border-satriales-300'
-                            }
-                            px-3 py-2 text-sm font-medium border rounded-md transition-all duration-200
-                            focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-satriales-500
-                            hover:shadow-sm
-                          `}
-                        >
-                          {item.name}
-                        </button>
-                      ))}
-                    </div>
+      {/* Current Step Content */}
+      <div className="bg-white rounded-lg shadow-vintage p-6">
+        <h2 className="text-xl font-semibold text-butcher-800 mb-4">
+          {steps[currentStep].title}
+        </h2>
+        <p className="text-butcher-600 mb-6">{steps[currentStep].description}</p>
+
+        {currentStep === steps.length - 1 ? (
+          <div className="space-y-6">
+            {showRecipeMatching && (
+              <RecipeMatching userRecipes={matchedRecipes} />
+            )}
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {/* Category Groups */}
+            {Object.entries(getItemsByCategory(steps[currentStep].items)).map(
+              ([category, items]) => (
+                <div key={category} className="space-y-4">
+                  <h3 className="text-lg font-medium text-butcher-700">
+                    {category}
+                  </h3>
+                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                    {items.map((item) => (
+                      <button
+                        key={item.id}
+                        onClick={() => handleItemSelect(steps[currentStep].field as keyof SelectedItems, item.id)}
+                        className={`p-4 rounded-lg border-2 transition-colors ${
+                          selectedItems[steps[currentStep].field as keyof SelectedItems].includes(item.id)
+                            ? 'bg-butcher-50 border-butcher-500 text-butcher-700'
+                            : 'border-gray-200 hover:border-butcher-300'
+                        }`}
+                      >
+                        {item.name}
+                      </button>
+                    ))}
                   </div>
-                ));
-              })()}
-            </div>
-          ) : (
-            <div>
-              {loading ? (
-                <div className="flex justify-center items-center py-12">
-                  <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-satriales-600"></div>
                 </div>
-              ) : (
-                <div>
-                  {showRecipeMatching ? (
-                    <RecipeMatching userRecipes={matchedRecipes} />
-                  ) : (
-                    <div>
-                      <h3 className="text-xl font-bold text-butcher-800 mb-4">
-                        Recipe Recommendations Based on Your Ingredients
-                      </h3>
-                      <p className="text-butcher-600 mb-6">
-                        Here are recipes ranked from most to least relevant to your selected ingredients.
-                      </p>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {matchedRecipes.length > 0 ? (
-                          matchedRecipes.map(matchedRecipe => (
-                            <div
-                              key={matchedRecipe.id}
-                              className={`
-                                bg-white shadow-vintage rounded-lg overflow-hidden transform transition-all duration-300
-                                hover:shadow-vintage-lg hover:-translate-y-1
-                                ${currentRecipe?.id === matchedRecipe.id ? 'ring-2 ring-satriales-500' : ''}
-                              `}
-                            >
-                              <div className="relative">
-                                <img
-                                  src={matchedRecipe.imageUrl}
-                                  alt={matchedRecipe.title}
-                                  className="w-full h-48 object-cover"
-                                />
-                                <div className="absolute top-0 right-0 m-4">
-                                  <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-satriales-100 text-satriales-800">
-                                    {Math.round(matchedRecipe.matchPercentage || 0)}% Match
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="p-6">
-                                <h3 className="text-xl font-bold text-butcher-800 mb-2">
-                                  {matchedRecipe.title}
-                                </h3>
-                                <p className="text-butcher-600 mb-4 line-clamp-2">
-                                  {matchedRecipe.description}
-                                </p>
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center space-x-4">
-                                    <span className="flex items-center text-sm text-butcher-500">
-                                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                      </svg>
-                                      {matchedRecipe.cookingTime} mins
-                                    </span>
-                                    <span className="flex items-center text-sm text-butcher-500">
-                                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0M7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                                      </svg>
-                                      {matchedRecipe.servings} servings
-                                    </span>
-                                  </div>
-                                  <button
-                                    onClick={() => handleRecipeSelect(matchedRecipe)}
-                                    className="px-4 py-2 text-sm font-medium text-satriales-600 hover:text-satriales-700"
-                                  >
-                                    {currentRecipe?.id === matchedRecipe.id ? 'Selected' : 'Select'}
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="col-span-3 text-center py-8">
-                            <p className="text-butcher-600">No recipes found. Please try again with different ingredients.</p>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          )}
-
-          <div className="mt-8 flex justify-between">
-            <button
-              onClick={handleBack}
-              disabled={currentStep === 0}
-              className={`
-                px-4 py-2 rounded-md text-sm font-medium
-                ${currentStep === 0
-                  ? 'bg-butcher-100 text-butcher-400 cursor-not-allowed'
-                  : 'bg-butcher-500 text-white hover:bg-butcher-600'}
-              `}
-            >
-              Back
-            </button>
-            <button
-              onClick={handleNext}
-              disabled={currentStep === steps.length - 1}
-              className={`
-                px-4 py-2 rounded-md text-sm font-medium
-                ${currentStep === steps.length - 1
-                  ? 'bg-butcher-100 text-butcher-400 cursor-not-allowed'
-                  : 'bg-satriales-600 text-white hover:bg-satriales-700'}
-              `}
-            >
-              {currentStep === steps.length - 2 ? 'Find Matches' : 'Next'}
-            </button>
+              )
+            )}
           </div>
+        )}
+
+        {/* Navigation Buttons */}
+        <div className="flex justify-between mt-8">
+          <button
+            onClick={handleBack}
+            disabled={currentStep === 0}
+            className={`px-4 py-2 rounded-lg ${
+              currentStep === 0
+                ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                : 'bg-butcher-100 text-butcher-600 hover:bg-butcher-200'
+            }`}
+          >
+            Previous
+          </button>
+          <button
+            onClick={handleNext}
+            disabled={loading}
+            className={`px-4 py-2 rounded-lg ${
+              currentStep === steps.length - 1
+                ? 'bg-porkchop-500 text-white hover:bg-porkchop-600'
+                : 'bg-butcher-600 text-white hover:bg-butcher-700'
+            } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+          >
+            {currentStep === steps.length - 2 ? 'Find Matches' : 'Next'}
+          </button>
         </div>
       </div>
     </div>

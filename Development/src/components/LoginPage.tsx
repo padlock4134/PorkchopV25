@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useRouter } from 'next/router';
+import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 
 const LoginPage: React.FC = () => {
@@ -8,7 +9,7 @@ const LoginPage: React.FC = () => {
   const [localError, setLocalError] = useState('');
   
   const { login, isLoading, error: contextError } = useAuth();
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,7 +28,7 @@ const LoginPage: React.FC = () => {
     try {
       await login(email, password);
       // Navigate directly to the dashboard after login
-      navigate('/dashboard');
+      router.push('/dashboard');
       console.log('Navigation to /dashboard after login');
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to login');
@@ -36,7 +37,7 @@ const LoginPage: React.FC = () => {
 
   const handleBypass = () => {
     // For bypass, also navigate to dashboard
-    navigate('/dashboard');
+    router.push('/dashboard');
     console.log('Navigation to /dashboard via bypass');
   };
 
@@ -51,7 +52,7 @@ const LoginPage: React.FC = () => {
         <p className="mt-2 text-center text-sm text-gray-600">
           Or{' '}
           <Link
-            to="/signup"
+            href="/signup"
             className="font-medium text-porkchop-600 hover:text-porkchop-500"
           >
             create a new account
@@ -128,7 +129,7 @@ const LoginPage: React.FC = () => {
 
               <div className="text-sm">
                 <Link
-                  to="/forgot-password"
+                  href="/forgot-password"
                   className="font-medium text-porkchop-600 hover:text-porkchop-500"
                 >
                   Forgot your password?

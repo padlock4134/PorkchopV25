@@ -1,14 +1,31 @@
+import React from 'react';
 import type { NextPage } from 'next';
 import { useAuth } from '../context/AuthContext';
-import { useRouter } from 'next/router';
 import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import ChefFreddieLogo from '../components/ChefFreddieLogo';
+import { useRouter } from 'next/router';
+
+const CUISINE_OPTIONS = [
+  'Italian',
+  'French',
+  'Japanese',
+  'Chinese',
+  'Mexican',
+  'Indian',
+  'Thai',
+  'Mediterranean',
+  'American',
+  'BBQ',
+  'Seafood',
+  'Vegetarian',
+  'Vegan',
+  'Desserts',
+  'Breakfast'
+];
 
 const Profile: NextPage = () => {
-  const { user, logout, updateProfile } = useAuth();
+  const { user, isLoading: authLoading, updateProfile, logout } = useAuth();
   const router = useRouter();
-  
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -17,88 +34,70 @@ const Profile: NextPage = () => {
     facebook: '',
     twitter: '',
     website: '',
-    youtube: ''
+    youtube: '',
+    preferredCuisines: [] as string[]
   });
-  
-  const [isEditing, setIsEditing] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
-  const [saveMessage, setSaveMessage] = useState({ type: '', text: '' });
-  const [isLoading, setIsLoading] = useState(true);
-  
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+
+  // Update form when user data changes
   useEffect(() => {
-    // First check if we have data from profile-view page
-    const profileEditData = localStorage.getItem('profileEditData');
-    if (profileEditData) {
-      try {
-        const parsedProfileData = JSON.parse(profileEditData);
-        setFormData({
-          firstName: parsedProfileData.firstName || '',
-          lastName: parsedProfileData.lastName || '',
-          email: parsedProfileData.email || '',
-          instagram: parsedProfileData.socialLinks?.instagram || '',
-          facebook: parsedProfileData.socialLinks?.facebook || '',
-          twitter: parsedProfileData.socialLinks?.twitter || '',
-          website: parsedProfileData.socialLinks?.website || '',
-          youtube: parsedProfileData.socialLinks?.youtube || ''
-        });
-        // Clear the temporary data after using it
-        localStorage.removeItem('profileEditData');
-        setIsLoading(false);
-        setIsEditing(true); // Automatically enable editing mode
-        return;
-      } catch (e) {
-        console.error('Error parsing profile edit data:', e);
-      }
-    }
+    // Try to get user from localStorage if not in context
+    const storedUser = localStorage.getItem('user');
+    const userData = user || (storedUser ? JSON.parse(storedUser) : null);
     
-    // Fall back to regular user data if no profile edit data exists
-    if (user) {
-      // Initialize form data from user object
+    if (userData) {
       setFormData({
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        email: user.email || '',
-        instagram: user.socialLinks?.instagram || '',
-        facebook: user.socialLinks?.facebook || '',
-        twitter: user.socialLinks?.twitter || '',
-        website: user.socialLinks?.website || '',
-        youtube: user.socialLinks?.youtube || ''
+        firstName: userData.firstName || '',
+        lastName: userData.lastName || '',
+        email: userData.email || '',
+        instagram: userData.socialLinks?.instagram || '',
+        facebook: userData.socialLinks?.facebook || '',
+        twitter: userData.socialLinks?.twitter || '',
+        website: userData.socialLinks?.website || '',
+        youtube: userData.socialLinks?.youtube || '',
+        preferredCuisines: userData.preferredCuisines || []
       });
-      setIsLoading(false);
-    } else {
-      // Try to load from localStorage as fallback
-      const storedUser = localStorage.getItem('user');
-      if (storedUser) {
-        try {
-          const parsedUserData = JSON.parse(storedUser);
-          setFormData({
-            firstName: parsedUserData.firstName || '',
-            lastName: parsedUserData.lastName || '',
-            email: parsedUserData.email || '',
-            instagram: parsedUserData.socialLinks?.instagram || '',
-            facebook: parsedUserData.socialLinks?.facebook || '',
-            twitter: parsedUserData.socialLinks?.twitter || '',
-            website: parsedUserData.socialLinks?.website || '',
-            youtube: parsedUserData.socialLinks?.youtube || ''
-          });
-        } catch (e) {
-          console.error('Error parsing user data:', e);
-        }
-      }
-      setIsLoading(false);
     }
   }, [user]);
-  
+
+  // Handle auth state
+  useEffect(() => {
+    if (!authLoading && !user && !localStorage.getItem('user')) {
+      router.push('/login');
+    }
+  }, [authLoading, user, router]);
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
   };
-  
+
+  const handleCuisineToggle = (cuisine: string) => {
+    setFormData(prev => {
+      const cuisines = prev.preferredCuisines || [];
+      if (cuisines.includes(cuisine)) {
+        return {
+          ...prev,
+          preferredCuisines: cuisines.filter(c => c !== cuisine)
+        };
+      } else {
+        return {
+          ...prev,
+          preferredCuisines: [...cuisines, cuisine]
+        };
+      }
+    });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSaving(true);
-    setSaveMessage({ type: '', text: '' });
-    
+    setIsLoading(true);
+    setError('');
+    setSuccess('');
+
     try {
       await updateProfile({
         firstName: formData.firstName,
@@ -111,92 +110,64 @@ const Profile: NextPage = () => {
           twitter: formData.twitter,
           website: formData.website,
           youtube: formData.youtube
-        }
+        },
+        preferredCuisines: formData.preferredCuisines
       });
-      
-      setIsEditing(false);
-      setSaveMessage({ type: 'success', text: 'Profile updated successfully!' });
-      
-      // Clear success message after 3 seconds
-      setTimeout(() => {
-        setSaveMessage({ type: '', text: '' });
-      }, 3000);
-    } catch (error) {
-      setSaveMessage({ type: 'error', text: 'Failed to update profile. Please try again.' });
+      setSuccess('Profile updated successfully!');
+    } catch (err) {
+      setError('Failed to update profile. Please try again.');
     } finally {
-      setIsSaving(false);
+      setIsLoading(false);
     }
   };
-  
+
   const handleLogout = async () => {
     try {
       await logout();
       router.push('/login');
     } catch (error) {
-      console.error('Logout failed:', error);
+      setError('Failed to logout. Please try again.');
     }
   };
-  
-  if (isLoading) {
-    return <div className="text-center p-8">Loading...</div>;
-  }
-  
-  // Show a message if no user data is found but don't redirect
-  if (!user && !localStorage.getItem('user')) {
+
+  // Show loading state while auth is loading
+  if (authLoading) {
     return (
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center">
-        <h1 className="text-3xl font-bold text-butcher-800 mb-4">Profile Settings</h1>
-        <p className="text-lg mb-4">No user data found. Please log in first.</p>
-        <Link 
-          href="/login"
-          className="px-4 py-2 bg-butcher-600 text-white rounded-lg hover:bg-butcher-700 transition-colors"
-        >
-          Go to Login
-        </Link>
+      <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-3xl mx-auto bg-white rounded-lg shadow p-6">
+          <div className="animate-pulse space-y-4">
+            <div className="h-8 bg-gray-200 rounded w-1/4"></div>
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-200 rounded"></div>
+              <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
-  
+
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Header */}
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-butcher-800">Profile Settings</h1>
-        <Link 
-          href="/profile-view"
-          className="text-butcher-600 hover:text-butcher-800 transition-colors"
-        >
-          Back to Profile
-        </Link>
-      </div>
-      
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        {/* Profile Header */}
-        <div className="bg-butcher-700 text-white p-6 flex items-center">
-          <div className="w-20 h-20 rounded-full bg-white text-butcher-700 flex items-center justify-center text-3xl font-bold mr-4 overflow-hidden">
-            {formData.firstName ? formData.firstName.charAt(0) : ''}
-            {formData.lastName ? formData.lastName.charAt(0) : ''}
-          </div>
-          <div>
-            <h2 className="text-2xl font-bold">
-              {formData.firstName} {formData.lastName}
-            </h2>
-            <p className="text-butcher-200">{formData.email}</p>
-          </div>
-        </div>
+    <div className="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-3xl mx-auto bg-white rounded-lg shadow p-6">
+        <h1 className="text-3xl font-bold text-butcher-800 mb-8">Profile Settings</h1>
         
-        {saveMessage.text && (
-          <div className={`p-3 mb-4 rounded-md ${
-            saveMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
-          }`}>
-            {saveMessage.text}
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-md">
+            {error}
           </div>
         )}
         
-        <form onSubmit={handleSubmit}>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {success && (
+          <div className="mb-4 p-4 bg-green-100 text-green-700 rounded-md">
+            {success}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
-              <label htmlFor="firstName" className="block text-sm font-medium text-butcher-700 mb-1">
+              <label htmlFor="firstName" className="block text-sm font-medium text-gray-700">
                 First Name
               </label>
               <input
@@ -205,14 +176,12 @@ const Profile: NextPage = () => {
                 name="firstName"
                 value={formData.firstName}
                 onChange={handleChange}
-                disabled={!isEditing}
-                className={`w-full px-3 py-2 border rounded-md ${
-                  isEditing ? 'border-butcher-300' : 'border-gray-200 bg-gray-50'
-                }`}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-butcher-500 focus:ring-butcher-500"
               />
             </div>
+
             <div>
-              <label htmlFor="lastName" className="block text-sm font-medium text-butcher-700 mb-1">
+              <label htmlFor="lastName" className="block text-sm font-medium text-gray-700">
                 Last Name
               </label>
               <input
@@ -221,203 +190,166 @@ const Profile: NextPage = () => {
                 name="lastName"
                 value={formData.lastName}
                 onChange={handleChange}
-                disabled={!isEditing}
-                className={`w-full px-3 py-2 border rounded-md ${
-                  isEditing ? 'border-butcher-300' : 'border-gray-200 bg-gray-50'
-                }`}
-              />
-            </div>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-butcher-700 mb-1">
-                Email
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                disabled={!isEditing}
-                className={`w-full px-3 py-2 border rounded-md ${
-                  isEditing ? 'border-butcher-300' : 'border-gray-200 bg-gray-50'
-                }`}
+                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-butcher-500 focus:ring-butcher-500"
               />
             </div>
           </div>
-          
-          <h3 className="text-lg font-semibold text-butcher-800 mb-3 border-b border-butcher-100 pb-2">
-            Social Links
-          </h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div>
-              <label htmlFor="instagram" className="block text-sm font-medium text-butcher-700 mb-1">
-                Instagram
-              </label>
-              <div className="flex">
-                <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
-                  @
-                </span>
+
+          <div>
+            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-butcher-500 focus:ring-butcher-500"
+            />
+          </div>
+
+          <div className="border-t border-gray-200 pt-6">
+            <h2 className="text-xl font-semibold text-butcher-800 mb-4">Social Links</h2>
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="instagram" className="block text-sm font-medium text-gray-700">
+                  Instagram
+                </label>
                 <input
-                  type="text"
+                  type="url"
                   id="instagram"
                   name="instagram"
                   value={formData.instagram}
                   onChange={handleChange}
-                  disabled={!isEditing}
-                  className={`flex-1 px-3 py-2 border rounded-r-md ${
-                    isEditing ? 'border-butcher-300' : 'border-gray-200 bg-gray-50'
-                  }`}
-                  placeholder="username"
+                  placeholder="https://instagram.com/username"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-butcher-500 focus:ring-butcher-500"
                 />
               </div>
-            </div>
-            <div>
-              <label htmlFor="facebook" className="block text-sm font-medium text-butcher-700 mb-1">
-                Facebook
-              </label>
-              <div className="flex">
-                <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
-                  facebook.com/
-                </span>
+
+              <div>
+                <label htmlFor="facebook" className="block text-sm font-medium text-gray-700">
+                  Facebook
+                </label>
                 <input
-                  type="text"
+                  type="url"
                   id="facebook"
                   name="facebook"
                   value={formData.facebook}
                   onChange={handleChange}
-                  disabled={!isEditing}
-                  className={`flex-1 px-3 py-2 border rounded-r-md ${
-                    isEditing ? 'border-butcher-300' : 'border-gray-200 bg-gray-50'
-                  }`}
-                  placeholder="username"
+                  placeholder="https://facebook.com/username"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-butcher-500 focus:ring-butcher-500"
                 />
               </div>
-            </div>
-            <div>
-              <label htmlFor="twitter" className="block text-sm font-medium text-butcher-700 mb-1">
-                Twitter
-              </label>
-              <div className="flex">
-                <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
-                  @
-                </span>
+
+              <div>
+                <label htmlFor="twitter" className="block text-sm font-medium text-gray-700">
+                  Twitter
+                </label>
                 <input
-                  type="text"
+                  type="url"
                   id="twitter"
                   name="twitter"
                   value={formData.twitter}
                   onChange={handleChange}
-                  disabled={!isEditing}
-                  className={`flex-1 px-3 py-2 border rounded-r-md ${
-                    isEditing ? 'border-butcher-300' : 'border-gray-200 bg-gray-50'
-                  }`}
-                  placeholder="username"
+                  placeholder="https://twitter.com/username"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-butcher-500 focus:ring-butcher-500"
                 />
               </div>
-            </div>
-            <div>
-              <label htmlFor="website" className="block text-sm font-medium text-butcher-700 mb-1">
-                Website
-              </label>
-              <input
-                type="url"
-                id="website"
-                name="website"
-                value={formData.website}
-                onChange={handleChange}
-                disabled={!isEditing}
-                className={`w-full px-3 py-2 border rounded-md ${
-                  isEditing ? 'border-butcher-300' : 'border-gray-200 bg-gray-50'
-                }`}
-                placeholder="https://yourwebsite.com"
-              />
-            </div>
-            <div>
-              <label htmlFor="youtube" className="block text-sm font-medium text-butcher-700 mb-1">
-                YouTube
-              </label>
-              <div className="flex">
-                <span className="inline-flex items-center px-3 py-2 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500">
-                  youtube.com/
-                </span>
+
+              <div>
+                <label htmlFor="website" className="block text-sm font-medium text-gray-700">
+                  Website
+                </label>
                 <input
-                  type="text"
+                  type="url"
+                  id="website"
+                  name="website"
+                  value={formData.website}
+                  onChange={handleChange}
+                  placeholder="https://yourwebsite.com"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-butcher-500 focus:ring-butcher-500"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="youtube" className="block text-sm font-medium text-gray-700">
+                  YouTube
+                </label>
+                <input
+                  type="url"
                   id="youtube"
                   name="youtube"
                   value={formData.youtube}
                   onChange={handleChange}
-                  disabled={!isEditing}
-                  className={`flex-1 px-3 py-2 border rounded-r-md ${
-                    isEditing ? 'border-butcher-300' : 'border-gray-200 bg-gray-50'
-                  }`}
-                  placeholder="channel"
+                  placeholder="https://youtube.com/channel"
+                  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-butcher-500 focus:ring-butcher-500"
                 />
               </div>
             </div>
           </div>
-          
-          <div className="flex justify-between border-t border-butcher-100 pt-6">
+
+          <div className="border-t border-gray-200 pt-6">
+            <h2 className="text-xl font-semibold text-butcher-800 mb-4">Cuisine Preferences</h2>
+            <p className="text-sm text-gray-600 mb-4">Select your favorite cuisines to get personalized recipe recommendations</p>
+            <div className="flex flex-wrap gap-2">
+              {CUISINE_OPTIONS.map(cuisine => (
+                <button
+                  key={cuisine}
+                  type="button"
+                  onClick={() => handleCuisineToggle(cuisine)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                    formData.preferredCuisines.includes(cuisine)
+                      ? 'bg-butcher-600 text-white hover:bg-butcher-700 ring-2 ring-butcher-600 ring-offset-2'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 ring-1 ring-gray-300'
+                  }`}
+                >
+                  {cuisine}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex justify-between items-center pt-6">
             <button
               type="button"
-              onClick={handleLogout}
-              className="px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+              onClick={() => router.push('/dashboard')}
+              className="px-4 py-2 rounded-md text-white font-medium bg-gray-600 hover:bg-gray-700 transition-colors flex items-center gap-2 group"
             >
-              Sign Out
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                fill="none" 
+                viewBox="0 0 24 24" 
+                strokeWidth={2} 
+                stroke="currentColor" 
+                className="w-4 h-4 group-hover:-translate-x-1 transition-transform"
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+              </svg>
+              Back
             </button>
-            
-            <div className="space-x-3">
-              {isEditing ? (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setIsEditing(false)}
-                    className="px-4 py-2 border border-butcher-300 text-butcher-700 rounded-lg hover:bg-butcher-50 transition-colors"
-                    disabled={isSaving}
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-butcher-600 text-white rounded-lg hover:bg-butcher-700 transition-colors"
-                    disabled={isSaving}
-                  >
-                    {isSaving ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => setIsEditing(true)}
-                  className="px-4 py-2 bg-butcher-600 text-white rounded-lg hover:bg-butcher-700 transition-colors"
-                >
-                  Edit Profile
-                </button>
-              )}
+            <div className="flex gap-4">
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="px-4 py-2 rounded-md text-white font-medium bg-gray-600 hover:bg-gray-700 transition-colors"
+              >
+                Logout
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className={`px-4 py-2 rounded-md text-white font-medium ${
+                  isLoading 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-butcher-600 hover:bg-butcher-700'
+                }`}
+              >
+                {isLoading ? 'Saving...' : 'Save Changes'}
+              </button>
             </div>
           </div>
         </form>
-      </div>
-      
-      <div className="bg-white shadow-md rounded-lg overflow-hidden mt-8">
-        <h3 className="text-lg font-semibold text-butcher-800 mb-4 p-6">Account Information</h3>
-        <div className="space-y-4 p-6">
-          <div className="flex justify-between items-center pb-2 border-b border-butcher-100">
-            <span className="text-butcher-600">Subscription</span>
-            <span className="font-medium text-butcher-800">{user?.subscriptionTier === 'premium' ? 'Premium' : 'Free'}</span>
-          </div>
-          <div className="flex justify-between items-center pb-2 border-b border-butcher-100">
-            <span className="text-butcher-600">Status</span>
-            <span className="font-medium text-butcher-800 capitalize">{user?.subscriptionStatus}</span>
-          </div>
-          <div className="flex justify-between items-center pb-2 border-b border-butcher-100">
-            <span className="text-butcher-600">Recipes Created</span>
-            <span className="font-medium text-butcher-800">{user?.recipesCreated}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-butcher-600">Member Since</span>
-            <span className="font-medium text-butcher-800">{user ? new Date(user.createdAt).toLocaleDateString() : ''}</span>
-          </div>
-        </div>
       </div>
     </div>
   );

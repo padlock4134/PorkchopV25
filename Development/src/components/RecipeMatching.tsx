@@ -10,294 +10,105 @@ interface RecipeMatchingProps {
   userRecipes?: Recipe[];
 }
 
-// Mock data for recipe matching
-const mockRecipes: Recipe[] = [
-  {
-    id: '1',
-    title: 'Classic Pork Chops',
-    description: 'Juicy, tender pork chops with a perfect sear and delicious seasoning.',
-    ingredients: [
-      '2 bone-in pork chops, 1-inch thick',
-      '2 cloves garlic, minced',
-      '1 tablespoon fresh rosemary, chopped',
-      '1 teaspoon black pepper',
-      '1 teaspoon kosher salt',
-      '2 tablespoons olive oil'
-    ],
-    instructions: [
-      'Pat pork chops dry with paper towels and season generously with salt and pepper on both sides.',
-      'Mix minced garlic and chopped rosemary in a small bowl.',
-      'Rub the garlic and rosemary mixture onto both sides of the pork chops.',
-      'Heat olive oil in a large skillet over medium-high heat until shimmering.',
-      'Add pork chops to the skillet and cook for 4-5 minutes on each side until golden brown and internal temperature reaches 145°F.',
-      'Remove from heat and let rest for 5 minutes before serving.'
-    ],
-    cookingTime: 20,
-    servings: 2,
-    difficulty: 'medium',
-    imageUrl: 'https://images.unsplash.com/photo-1432139555190-58524dae6a55?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1760&q=80',
-    requiredCookware: ['skillet', 'tongs'],
-    proteinTags: ['pork'],
-    veggieTags: [],
-    herbTags: ['rosemary', 'garlic'],
-    pantryTags: ['olive oil', 'salt', 'pepper'],
-    steps: [],
-    matchPercentage: 95,
-    cuisine: 'American'
-  },
-  {
-    id: '2',
-    title: 'Garlic Butter Steak',
-    description: 'Perfectly seared steak with a rich garlic butter sauce.',
-    ingredients: [
-      '2 ribeye steaks, 1-inch thick',
-      '4 tablespoons butter',
-      '4 cloves garlic, minced',
-      '2 sprigs fresh thyme',
-      '1 sprig fresh rosemary',
-      '1 tablespoon olive oil',
-      'Salt and pepper to taste'
-    ],
-    instructions: [
-      'Remove steaks from refrigerator 30 minutes before cooking to bring to room temperature.',
-      'Pat steaks dry with paper towels and season generously with salt and pepper on both sides.',
-      'Heat olive oil in a cast iron skillet over high heat until smoking.',
-      'Add steaks to the skillet and cook for 3-4 minutes on each side for medium-rare.',
-      'Reduce heat to medium-low, add butter, garlic, thyme, and rosemary to the skillet.',
-      'Tilt the pan slightly and spoon the garlic butter over the steaks continuously for 1-2 minutes.',
-      'Remove steaks from the skillet and let rest for 5-10 minutes before serving.',
-      'Slice against the grain and serve with the garlic butter sauce from the pan.'
-    ],
-    cookingTime: 25,
-    servings: 2,
-    difficulty: 'medium',
-    imageUrl: 'https://images.unsplash.com/photo-1600891964092-4316c288032e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80',
-    requiredCookware: ['cast iron skillet', 'tongs'],
-    proteinTags: ['beef'],
-    veggieTags: [],
-    herbTags: ['thyme', 'rosemary', 'garlic'],
-    pantryTags: ['butter', 'olive oil', 'salt', 'pepper'],
-    steps: [],
-    matchPercentage: 85,
-    cuisine: 'American'
-  },
-  {
-    id: '3',
-    title: 'Herb Roasted Chicken',
-    description: 'Whole roasted chicken with herbs and lemon for a perfect Sunday dinner.',
-    ingredients: [
-      '1 whole chicken (4-5 pounds)',
-      '1 lemon, quartered',
-      '4 cloves garlic, crushed',
-      '2 tablespoons fresh thyme leaves',
-      '2 tablespoons fresh rosemary, chopped',
-      '2 tablespoons olive oil',
-      '1 tablespoon butter, softened',
-      'Salt and pepper to taste'
-    ],
-    instructions: [
-      'Preheat oven to 425°F (220°C).',
-      'Remove giblets from chicken cavity and pat the chicken dry with paper towels.',
-      'In a small bowl, mix together softened butter, thyme, rosemary, salt, and pepper.',
-      'Gently loosen the skin over the chicken breast and spread the herb butter underneath.',
-      'Stuff the chicken cavity with quartered lemon and crushed garlic cloves.',
-      'Tie the legs together with kitchen twine and tuck the wing tips under the body.',
-      'Rub the outside of the chicken with olive oil and season with additional salt and pepper.',
-      'Place the chicken breast-side up in a roasting pan.',
-      'Roast for 1 hour and 15 minutes, or until the internal temperature reaches 165°F (74°C) in the thickest part of the thigh.',
-      'Let the chicken rest for 15 minutes before carving and serving.'
-    ],
-    cookingTime: 75,
-    servings: 4,
-    difficulty: 'medium',
-    imageUrl: 'https://images.unsplash.com/photo-1598103442097-8b74394b95c6?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1760&q=80',
-    requiredCookware: ['roasting pan', 'kitchen twine', 'meat thermometer'],
-    proteinTags: ['chicken'],
-    veggieTags: [],
-    herbTags: ['thyme', 'rosemary', 'garlic'],
-    pantryTags: ['olive oil', 'butter', 'salt', 'pepper'],
-    steps: [],
-    matchPercentage: 78,
-    cuisine: 'American'
-  },
-  {
-    id: '4',
-    title: 'Vegetable Stir Fry',
-    description: 'Quick and healthy vegetable stir fry with a savory sauce.',
-    ingredients: [
-      '2 tablespoons vegetable oil',
-      '2 cloves garlic, minced',
-      '1 tablespoon ginger, grated',
-      '1 bell pepper, sliced',
-      '1 carrot, julienned',
-      '1 cup broccoli florets',
-      '1 cup snap peas',
-      '1 cup mushrooms, sliced',
-      '2 tablespoons soy sauce',
-      '1 tablespoon oyster sauce',
-      '1 teaspoon sesame oil',
-      '1/4 cup water',
-      '1 teaspoon cornstarch (mixed with water)'
-    ],
-    instructions: [
-      'Heat vegetable oil in a wok or large skillet over high heat.',
-      'Add garlic and ginger, stir-fry for 30 seconds until fragrant.',
-      'Add carrots and stir-fry for 1 minute.',
-      'Add bell pepper, broccoli, and snap peas, stir-fry for 2-3 minutes.',
-      'Add mushrooms and stir-fry for another minute.',
-      'In a small bowl, mix soy sauce, oyster sauce, sesame oil, water, and cornstarch slurry.',
-      'Pour sauce over vegetables and stir to coat evenly.',
-      'Cook for 1-2 more minutes until sauce thickens and vegetables are crisp-tender.',
-      'Serve immediately over rice or noodles.'
-    ],
-    cookingTime: 15,
-    servings: 4,
-    difficulty: 'easy',
-    imageUrl: 'https://images.unsplash.com/photo-1512621776951-a57141f2eefd?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80',
-    requiredCookware: ['wok', 'spatula'],
-    proteinTags: [],
-    veggieTags: ['bell pepper', 'carrot', 'broccoli', 'snap peas', 'mushrooms'],
-    herbTags: ['garlic', 'ginger'],
-    pantryTags: ['soy sauce', 'oyster sauce', 'sesame oil', 'cornstarch'],
-    steps: [],
-    matchPercentage: 65,
-    cuisine: 'Asian'
-  }
-];
-
-// Fallback recipes to show when no matches are found
-const fallbackRecipes: Recipe[] = [
-  {
-    id: '5',
-    title: 'Simple Pasta Marinara',
-    description: 'Classic pasta with marinara sauce, ready in minutes.',
-    ingredients: [
-      '8 oz spaghetti or pasta of choice',
-      '2 cups marinara sauce',
-      '2 cloves garlic, minced',
-      '1 tablespoon olive oil',
-      '1/4 cup fresh basil, chopped',
-      'Grated Parmesan cheese for serving',
-      'Salt and pepper to taste'
-    ],
-    instructions: [
-      'Bring a large pot of salted water to a boil.',
-      'Add pasta and cook according to package instructions until al dente.',
-      'While pasta is cooking, heat olive oil in a saucepan over medium heat.',
-      'Add minced garlic and sauté for 30 seconds until fragrant.',
-      'Add marinara sauce and simmer for 5 minutes.',
-      'Season with salt and pepper to taste.',
-      'Drain pasta and return to pot.',
-      'Pour sauce over pasta and toss to coat evenly.',
-      'Serve topped with fresh basil and grated Parmesan cheese.'
-    ],
-    cookingTime: 15,
-    servings: 2,
-    difficulty: 'easy',
-    imageUrl: 'https://images.unsplash.com/photo-1563379926898-4316c288032e?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80',
-    requiredCookware: ['pot', 'saucepan', 'colander'],
-    proteinTags: [],
-    veggieTags: [],
-    herbTags: ['basil', 'garlic'],
-    pantryTags: ['pasta', 'marinara sauce', 'olive oil', 'parmesan'],
-    steps: [],
-    matchPercentage: 50,
-    cuisine: 'Italian'
-  },
-  {
-    id: '6',
-    title: 'Avocado Toast',
-    description: 'Simple and nutritious avocado toast with various toppings.',
-    ingredients: [
-      '2 slices whole grain bread',
-      '1 ripe avocado',
-      '1 tablespoon lemon juice',
-      '1/4 teaspoon red pepper flakes',
-      '2 eggs (optional)',
-      'Salt and pepper to taste',
-      'Microgreens or sprouts for garnish'
-    ],
-    instructions: [
-      'Toast bread slices until golden brown.',
-      'Cut avocado in half, remove pit, and scoop flesh into a bowl.',
-      'Add lemon juice, salt, and pepper to avocado and mash with a fork to desired consistency.',
-      'Spread mashed avocado evenly on toast slices.',
-      'If using eggs, fry or poach them to your liking.',
-      'Top avocado toast with eggs if desired.',
-      'Sprinkle with red pepper flakes and garnish with microgreens.',
-      'Serve immediately.'
-    ],
-    cookingTime: 10,
-    servings: 1,
-    difficulty: 'easy',
-    imageUrl: 'https://images.unsplash.com/photo-1603046891744-76176c7f0e25?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1587&q=80',
-    requiredCookware: ['toaster', 'bowl', 'fork'],
-    proteinTags: ['eggs'],
-    veggieTags: ['avocado'],
-    herbTags: [],
-    pantryTags: ['bread', 'lemon juice', 'red pepper flakes', 'salt', 'pepper'],
-    steps: [],
-    matchPercentage: 40,
-    cuisine: 'American'
-  },
-  {
-    id: '7',
-    title: 'Fruit Smoothie Bowl',
-    description: 'Refreshing smoothie bowl topped with fresh fruits and granola.',
-    ingredients: [
-      '1 frozen banana',
-      '1 cup frozen mixed berries',
-      '1/2 cup Greek yogurt',
-      '1/4 cup milk of choice',
-      '1 tablespoon honey or maple syrup',
-      'Toppings: sliced banana, fresh berries, granola, chia seeds, coconut flakes'
-    ],
-    instructions: [
-      'Add frozen banana, mixed berries, Greek yogurt, milk, and sweetener to a blender.',
-      'Blend until smooth, adding more milk if needed to reach desired consistency.',
-      'Pour smoothie into a bowl.',
-      'Arrange toppings in sections over the smoothie.',
-      'Serve immediately before it melts.'
-    ],
-    cookingTime: 5,
-    servings: 1,
-    difficulty: 'easy',
-    imageUrl: 'https://images.unsplash.com/photo-1511690656952-34342bb7c2f2?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1764&q=80',
-    requiredCookware: ['blender', 'bowl'],
-    proteinTags: [],
-    veggieTags: ['banana', 'berries'],
-    herbTags: [],
-    pantryTags: ['yogurt', 'milk', 'honey', 'granola', 'chia seeds', 'coconut flakes'],
-    steps: [],
-    matchPercentage: 35,
-    cuisine: 'American'
-  }
-];
-
 const RecipeMatching: React.FC<RecipeMatchingProps> = ({
   userRecipes
 }) => {
+  const router = useRouter();
   const { user } = useAuth();
   const { addToSaved, removeFromSaved, isRecipeSaved, addToCollection, removeFromCollection } = useSavedRecipes();
-  const { trackRecipeSaved, trackIngredientUsed, trackCuisineCreated } = useAchievementTracker();
+  
+  // Safely try to use achievement tracker, but don't crash if it's not available
+  let trackRecipeSaved = (_recipeId: string) => {};
+  let trackIngredientUsed = (_ingredients: string[]) => {};
+  let trackCuisineCreated = (_cuisine: string) => {};
+  
+  try {
+    const achievementTracker = useAchievementTracker();
+    trackRecipeSaved = achievementTracker.trackRecipeSaved;
+    trackIngredientUsed = achievementTracker.trackIngredientUsed;
+    trackCuisineCreated = achievementTracker.trackCuisineCreated;
+  } catch (error) {
+    console.warn('Achievement tracking not available:', error);
+  }
+
+  const [matchedRecipes, setMatchedRecipes] = useState<Recipe[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [activeCategory, setActiveCategory] = useState<string>('all');
   const [flippedCards, setFlippedCards] = useState<Record<string, boolean>>({});
   
-  // Use userRecipes if provided, otherwise use mockRecipes
-  const recipes = userRecipes && userRecipes.length > 0 ? userRecipes : mockRecipes;
-  
+  useEffect(() => {
+    const fetchMatchedRecipes = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('/api/recipes', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            endpoint: 'getRecipes',
+            userId: user?.id || 'default'
+          }),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch recipes');
+        }
+        const recipes = await response.json();
+        
+        // For now, just show all recipes
+        // TODO: Implement proper recipe matching based on user preferences and ingredients
+        setMatchedRecipes(recipes);
+      } catch (err) {
+        console.error('Error fetching recipes:', err);
+        // Import mockRecipes as a fallback
+        import('../utils/recipeData').then(({ mockRecipes }) => {
+          console.log('Using mock recipes as fallback');
+          setMatchedRecipes(mockRecipes);
+        });
+        setError('Failed to load recipes from server, using sample recipes instead');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMatchedRecipes();
+  }, [user?.id]);
+
+  if (loading) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-600">Loading recipes...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-red-600">{error}</p>
+      </div>
+    );
+  }
+
+  if (matchedRecipes.length === 0) {
+    return (
+      <div className="text-center py-8">
+        <p className="text-gray-600">No matching recipes found.</p>
+      </div>
+    );
+  }
+
   // Filter recipes based on active category
   const filteredRecipes = activeCategory === 'all' 
-    ? recipes 
-    : recipes.filter(recipe => {
+    ? matchedRecipes 
+    : matchedRecipes.filter(recipe => {
         if (activeCategory === 'easy') return recipe.difficulty === 'easy';
         if (activeCategory === 'medium') return recipe.difficulty === 'medium';
         if (activeCategory === 'hard') return recipe.difficulty === 'hard';
         return true;
       });
-
-  // Use fallback recipes if no recipes match the filter
-  const displayRecipes = filteredRecipes.length > 0 ? filteredRecipes : fallbackRecipes;
 
   // Function to get a color based on match percentage
   const getMatchColor = (percentage: number) => {
@@ -336,14 +147,14 @@ const RecipeMatching: React.FC<RecipeMatchingProps> = ({
       addToCollection('favorites', recipe.id);
       
       // Track achievements
-      trackRecipeSaved();
+      trackRecipeSaved(recipe.id);
       
       // Track ingredients used for the Flavor Explorer achievement
       if (recipe.ingredients && recipe.ingredients.length > 0) {
         // Extract ingredient names from the ingredients array
-        const ingredientNames = recipe.ingredients.map(ing => 
-          typeof ing === 'string' ? ing : ing.name
-        );
+        const ingredientNames = Array.isArray(recipe.ingredients) 
+          ? recipe.ingredients.map(ing => typeof ing === 'string' ? ing : ing.name || ing.toString())
+          : [];
         trackIngredientUsed(ingredientNames);
       }
       
@@ -407,7 +218,7 @@ const RecipeMatching: React.FC<RecipeMatchingProps> = ({
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {displayRecipes.map(recipe => (
+        {filteredRecipes.map(recipe => (
           <div 
             key={recipe.id} 
             className={`
@@ -538,14 +349,13 @@ const RecipeMatching: React.FC<RecipeMatchingProps> = ({
               <div className="mb-4">
                 <h4 className="text-sm font-medium text-butcher-700 mb-2">Ingredients:</h4>
                 <ul className="text-sm text-butcher-600 space-y-1 pl-4 list-disc">
-                  {recipe.ingredients.map((ingredient, idx) => (
+                  {Array.isArray(recipe.ingredients) ? recipe.ingredients.map((ingredient, idx) => (
                     <li key={idx}>
                       {typeof ingredient === 'string' 
                         ? ingredient 
-                        : `${ingredient.amount} ${ingredient.unit} ${ingredient.name}${ingredient.preparation ? `, ${ingredient.preparation}` : ''}`
-                      }
+                        : `${ingredient.amount} ${ingredient.unit} ${ingredient.name}${ingredient.preparation ? `, ${ingredient.preparation}` : ''}`}
                     </li>
-                  ))}
+                  )) : <li>No ingredients listed.</li>}
                 </ul>
               </div>
 

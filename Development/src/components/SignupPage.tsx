@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/router';
+import Link from 'next/link';
 import { useAuth } from '../context/AuthContext';
 
 const SignupPage: React.FC = () => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const { signup, isLoading, error: contextError } = useAuth();
   const [localError, setLocalError] = useState('');
   const [formData, setFormData] = useState({
@@ -32,7 +33,7 @@ const SignupPage: React.FC = () => {
     try {
       await signup(formData.email, formData.password, formData.firstName, formData.lastName);
       // Navigate directly to dashboard after signup
-      navigate('/dashboard');
+      router.push('/dashboard');
       console.log('Navigation to /dashboard after signup successful');
     } catch (err) {
       setLocalError(err instanceof Error ? err.message : 'Failed to create account');
@@ -51,7 +52,7 @@ const SignupPage: React.FC = () => {
         <p className="mt-2 text-center text-sm text-gray-600">
           Already have an account?{' '}
           <Link
-            to="/login"
+            href="/login"
             className="font-medium text-porkchop-600 hover:text-porkchop-500"
           >
             Sign in

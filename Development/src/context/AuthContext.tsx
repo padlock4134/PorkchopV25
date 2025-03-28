@@ -1,8 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { GoogleLogin, GoogleOAuthProvider } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
+import { GOOGLE_CLIENT_ID } from '../config/google-auth';
 
 interface User {
   id: string;
-  email: string;
+  uid: string;
+  email: string | null;
+  displayName: string | null;
   firstName: string;
   lastName: string;
   name: string;
@@ -30,6 +35,7 @@ interface AuthContextType {
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (email: string, password: string, firstName: string, lastName: string) => Promise<void>;
+  loginWithGoogle: (credential: string) => Promise<void>;
   logout: () => Promise<void>;
   updateProfile: (updates: Partial<User>) => Promise<void>;
 }
@@ -49,13 +55,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Initialize with empty user object to prevent undefined errors
+  const initialUser: User = {
+    id: '',
+    uid: '',
+    email: null,
+    displayName: null,
+    firstName: '',
+    lastName: '',
+    name: '',
+    avatar: '',
+    recipesCreated: 0,
+    createdAt: '',
+    subscriptionTier: 'free',
+    subscriptionStatus: 'trial',
+    socialLinks: {}
+  };
+
   // Load user from localStorage on mount
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
-          setUser(JSON.parse(storedUser));
+          const parsedUser = JSON.parse(storedUser);
+          setUser({ ...initialUser, ...parsedUser });
+        } else {
+          setUser(null);
         }
       } catch (err) {
         console.error('Error restoring user session:', err);
@@ -73,34 +99,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
 
     try {
-      // This is a simplified mock login - in a real app, you'd call an API
-      // For demo purposes, any email/password will work
-      
-      // Create a demo user object for any login
       const userObj: User = {
+        ...initialUser,
         id: `user_${Date.now()}`,
+        uid: `uid_${Date.now()}`,
         email,
+        displayName: email.split('@')[0],
         firstName: email.split('@')[0],
         lastName: 'User',
         name: `${email.split('@')[0]} User`,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-          email.split('@')[0]
-        )}`,
-        recipesCreated: 0,
+        avatar: '/images/default-avatar.png',
         createdAt: new Date().toISOString(),
-        subscriptionTier: 'free',
-        subscriptionStatus: 'trial',
-        trialEndDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days trial
-        chefRank: 'Sous Chef',
-        rankLevel: 2,
-        preferredCuisines: [],
-        socialLinks: {
-          instagram: '',
-          facebook: '',
-          twitter: '',
-          website: '',
-          youtube: ''
-        }
+        trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
       };
 
       setUser(userObj);
@@ -118,32 +128,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setError(null);
 
     try {
-      // This is a simplified mock signup - in a real app, you'd call an API
-      // Create a new user object
       const userObj: User = {
+        ...initialUser,
         id: `user_${Date.now()}`,
+        uid: `uid_${Date.now()}`,
         email,
+        displayName: `${firstName} ${lastName}`,
         firstName,
         lastName,
         name: `${firstName} ${lastName}`,
-        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(
-          `${firstName} ${lastName}`
-        )}`,
-        recipesCreated: 0,
+        avatar: '/images/default-avatar.png',
         createdAt: new Date().toISOString(),
-        subscriptionTier: 'free',
-        subscriptionStatus: 'trial',
-        trialEndDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString(), // 14 days trial
-        chefRank: 'Apprentice',
-        rankLevel: 1,
-        preferredCuisines: [],
-        socialLinks: {
-          instagram: '',
-          facebook: '',
-          twitter: '',
-          website: '',
-          youtube: ''
-        }
+        trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
       };
 
       setUser(userObj);
@@ -151,6 +147,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Signup failed');
       throw err;
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loginWithGoogle = async (credential: string) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const decoded: any = jwtDecode(credential);
+      
+      const userObj: User = {
+        ...initialUser,
+        id: `google_${decoded.sub}`,
+        uid: `google_${decoded.sub}`,
+        email: decoded.email,
+        displayName: decoded.name,
+        firstName: decoded.given_name || decoded.name.split(' ')[0],
+        lastName: decoded.family_name || decoded.name.split(' ').slice(1).join(' '),
+        name: decoded.name,
+        avatar: decoded.picture || '/images/default-avatar.png',
+        createdAt: new Date().toISOString(),
+        trialEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()
+      };
+
+      setUser(userObj);
+      localStorage.setItem('user', JSON.stringify(userObj));
+    } catch (err) {
+      console.error('Error in Google login:', err);
+      setError('Failed to login with Google');
     } finally {
       setIsLoading(false);
     }
@@ -180,11 +207,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('No user logged in');
       }
 
-      // Handle nested socialLinks object properly
       const updatedUser = { 
         ...user, 
         ...updates,
-        // Ensure socialLinks are properly merged
         socialLinks: {
           ...user.socialLinks,
           ...(updates.socialLinks || {})
@@ -207,9 +232,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     error,
     login,
     signup,
+    loginWithGoogle,
     logout,
-    updateProfile,
+    updateProfile
   };
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+      <AuthContext.Provider value={value}>
+        {children}
+      </AuthContext.Provider>
+    </GoogleOAuthProvider>
+  );
 };

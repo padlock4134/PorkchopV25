@@ -1,3 +1,4 @@
+import React from 'react';
 import type { NextPage } from 'next';
 import { useState, useEffect } from 'react';
 import { useChefFreddie } from '../context/ChefFreddieContext';

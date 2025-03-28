@@ -1,8 +1,11 @@
 {
   "/_app": "pages/_app.js",
-  "/_document": "pages/_document.js",
   "/_error": "pages/_error.js",
+  "/_document": "pages/_document.js",
+  "/": "pages/index.js",
   "/dashboard": "pages/dashboard.js",
-  "/the-grange": "pages/the-grange.js",
-  "/tutorials": "pages/tutorials.js"
+  "/home": "pages/home.js",
+  "/signup": "pages/signup.js",
+  "/api/recipes": "pages/api/recipes.js",
+  "/create-recipe": "pages/create-recipe.js"
 }

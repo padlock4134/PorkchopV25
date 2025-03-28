@@ -15,7 +15,7 @@ const ChefFreddieLogo: React.FC<ChefFreddieLogoProps> = ({ className, size = 'me
       sizeClass = 'w-8 h-8';
       break;
     case 'large':
-      sizeClass = 'w-16 h-16';
+      sizeClass = 'w-80 h-80';  // Made bigger (320x320) to fill the container better
       break;
     case 'medium':
     default:

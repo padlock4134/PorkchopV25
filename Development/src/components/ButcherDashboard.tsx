@@ -135,7 +135,7 @@ const ButcherDashboard: React.FC = () => {
                 </h3>
                 <p className="text-sm text-butcher-600">{action.description}</p>
                 {action.name === 'The Grange Marketplace' && (
-                  <MeatTag color="green" size="small" className="mt-3">
+                  <MeatTag color="accent" className="mt-3">
                     New!
                   </MeatTag>
                 )}

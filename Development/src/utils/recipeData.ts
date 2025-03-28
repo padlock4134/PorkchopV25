@@ -18,6 +18,7 @@ export interface Recipe {
   ingredients: (string | Ingredient)[];
   instructions: string[];
   requiredCookware: string[];
+  cookware: string[];
   proteinTags: string[];
   veggieTags: string[];
   herbTags: string[];
@@ -61,6 +62,7 @@ export const mockRecipes: Recipe[] = [
     cuisine: 'American',
     imageUrl: 'https://example.com/porkchop.jpg',
     requiredCookware: ['skillet', 'tongs'],
+    cookware: ['skillet', 'tongs'],
     proteinTags: ['pork'],
     veggieTags: [],
     herbTags: ['rosemary', 'garlic'],
@@ -96,6 +98,7 @@ export const mockRecipes: Recipe[] = [
     cuisine: 'French',
     imageUrl: 'https://example.com/pork-tenderloin.jpg',
     requiredCookware: ['roasting-pan', 'meat-thermometer'],
+    cookware: ['roasting-pan', 'meat-thermometer'],
     proteinTags: ['pork'],
     veggieTags: [],
     herbTags: ['thyme', 'rosemary', 'sage', 'garlic'],
@@ -134,6 +137,7 @@ export const mockRecipes: Recipe[] = [
     cuisine: 'Korean',
     imageUrl: 'https://example.com/korean-pork-belly.jpg',
     requiredCookware: ['grill', 'mixing-bowl'],
+    cookware: ['grill', 'mixing-bowl'],
     proteinTags: ['pork'],
     veggieTags: [],
     herbTags: ['garlic', 'ginger'],
@@ -175,6 +179,7 @@ export const mockRecipes: Recipe[] = [
     cuisine: 'Italian',
     imageUrl: 'https://example.com/porchetta.jpg',
     requiredCookware: ['roasting-pan', 'butcher-twine', 'meat-thermometer'],
+    cookware: ['roasting-pan', 'butcher-twine', 'meat-thermometer'],
     proteinTags: ['pork'],
     veggieTags: [],
     herbTags: ['rosemary', 'sage', 'garlic'],
@@ -217,6 +222,7 @@ export const mockRecipes: Recipe[] = [
     cuisine: 'Spanish',
     imageUrl: 'https://example.com/spanish-pork-stew.jpg',
     requiredCookware: ['dutch-oven', 'wooden-spoon'],
+    cookware: ['dutch-oven', 'wooden-spoon'],
     proteinTags: ['pork', 'chorizo'],
     veggieTags: ['onion', 'bell-pepper', 'tomatoes'],
     herbTags: ['garlic', 'bay-leaf'],
@@ -284,6 +290,7 @@ export const parseCSVRecipes = async (): Promise<Recipe[]> => {
             servings: parseInt(row.servings),
             difficulty: 'medium', // Default difficulty
             requiredCookware: JSON.parse(row.required_cookware),
+            cookware: JSON.parse(row.required_cookware),
             proteinTags: JSON.parse(row.protein_tags),
             veggieTags: JSON.parse(row.veggie_tags),
             herbTags: JSON.parse(row.herb_tags),

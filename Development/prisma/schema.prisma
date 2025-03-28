@@ -1,0 +1,38 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model Recipe {
+  id           String   @id
+  title        String
+  description  String?
+  ingredients  String
+  instructions String
+  cookTime     String?
+  prepTime     String?
+  totalTime    String?
+  recipeYield  String?
+  category     String?
+  cuisine      String?
+  author       String?
+  proteinTags  String
+  veggieTags   String
+  herbTags     String
+  cookware     String
+  difficulty   String?
+  images       Image[]
+}
+
+model Image {
+  id        String  @id
+  recipeId  String
+  url       String
+  alt       String?
+  isPrimary Boolean @default(false)
+  recipe    Recipe  @relation(fields: [recipeId], references: [id])
+}

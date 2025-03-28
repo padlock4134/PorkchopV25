@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, KeyboardEvent } from 'react';
+import React from 'react';
+import { useState, useEffect, useRef, KeyboardEvent } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useChefFreddie } from '../context/ChefFreddieContext';
 import { useRouter } from 'next/router';
@@ -9,6 +10,7 @@ import {
 } from '../utils/chefKnowledge';
 import ChefFreddieLogo from './ChefFreddieLogo';
 import type { Recipe } from '../utils/recipeData';
+import { analyzeTopic } from '../utils/topicDetection';
 
 // Define message types
 type MessageType = 'greeting' | 'help' | 'recipe' | 'general' | 'technique' | 'problem' | 'substitution' | 'timing' | 'pairing' | 'method';
@@ -55,6 +57,13 @@ interface RouteContextBase {
 }
 
 const GlobalChefFreddie: React.FC = () => {
+  const router = useRouter();
+  
+  // Hide on home page
+  if (router.pathname === '/') {
+    return null;
+  }
+  
   const [isMinimized, setIsMinimized] = useState(false);
   const [showBubble, setShowBubble] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -84,8 +93,6 @@ const GlobalChefFreddie: React.FC = () => {
     getRouteTitle
   } = useChefFreddie();
   
-  const router = useRouter();
-
   // Handle form submit
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,7 +117,27 @@ const GlobalChefFreddie: React.FC = () => {
 
   // Process message and get response
   const processMessageAndGetResponse = async (messageText: string) => {
-    // Determine the query type (simplified, no expertise selection)
+    // First, analyze if the topic is cooking-related
+    const topicAnalysis = analyzeTopic(messageText);
+
+    // If off-topic, gently redirect while maintaining Chef Freddie's personality
+    if (!topicAnalysis.isOnTopic) {
+      const chefResponse: Message = {
+        id: `chef-${Date.now()}`,
+        text: topicAnalysis.suggestedRedirect || "That's interesting! Let me share a helpful cooking tip with you...",
+        sender: 'chef',
+        timestamp: new Date().toISOString(),
+        suggestedQuestions: [
+          "Tell me more about cooking techniques",
+          "What recipes do you recommend?",
+          "Got any kitchen tips?"
+        ]
+      };
+      setMessages(prev => [...prev, chefResponse]);
+      return;
+    }
+
+    // Continue with normal message processing for on-topic messages
     const detectQueryContext = (query: string): string => {
       // All queries use the same context now
       return 'General Cooking Expert';

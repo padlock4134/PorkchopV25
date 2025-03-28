@@ -1,3 +1,4 @@
+import React from 'react';
 import type { NextPage } from 'next';
 import { useAuth } from '../context/AuthContext';
 import { useRouter } from 'next/router';

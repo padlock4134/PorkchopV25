@@ -1,102 +1,54 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
-import ChefFreddieLogo from './ChefFreddieLogo';
+import { useSavedRecipes } from '../context/SavedRecipesContext';
 
 const Dashboard: React.FC = () => {
-  const { user } = useAuth();
+  // Initialize context with safe defaults
+  const { user = {} } = useAuth() || {};
+  const { savedRecipes = [], collections = [] } = useSavedRecipes() || {};
 
-  const quickActions = [
-    {
-      name: "What's in My Kitchen?",
-      description: 'Create a recipe using ingredients you have',
-      icon: '📝',
-      link: '/create-recipe',
-      bgColor: 'bg-gray-600'
-    },
-    {
-      name: 'My Cookbook',
-      description: 'Access your saved recipes and collections',
-      icon: '📚',
-      link: '/my-cookbook',
-      bgColor: 'bg-pink-500'
-    },
-    {
-      name: 'The Grange Marketplace',
-      description: 'Connect with local farmers and food producers',
-      icon: '🧺',
-      link: '/the-grange',
-      bgColor: 'bg-green-600'
-    },
-    {
-      name: "Chef's Market",
-      description: 'Discover and share with the community',
-      icon: '👨‍🍳',
-      link: '/chefs-market',
-      bgColor: 'bg-blue-500'
-    }
-  ];
+  // Safe access to user properties with fallback values
+  const userName = user?.displayName?.toString() || 'Chef';
+  const userEmail = user?.email?.toString() || '';
+  const userId = user?.uid?.toString() || '';
 
+  // Stats with fallback values
   const stats = [
-    { name: 'Total Recipes', value: '4' },
-    { name: 'Favorite Recipes', value: '2' },
-    { name: 'Recipes Created', value: '0' },
-    { name: 'Recipe Collections', value: '4' }
+    { 
+      name: 'Saved Recipes', 
+      value: (savedRecipes?.length || 0).toString() 
+    },
+    { 
+      name: 'Collections', 
+      value: (collections?.length || 0).toString() 
+    },
+    { 
+      name: 'Recipes Tried', 
+      value: '0' // Placeholder for future feature
+    },
+    { 
+      name: 'Recipes Created', 
+      value: '0' // Placeholder for future feature
+    }
   ];
 
+  // Recent activity with fallback
   const recentActivity = [
-    {
-      type: 'favorited',
-      recipe: 'Clam Chowder',
-      time: 'Just now'
-    },
-    {
-      type: 'favorited',
-      recipe: 'Paella Valenciana',
-      time: 'Just now'
-    }
+    { recipe: 'Classic Pork Chop', time: '2h ago' },
+    { recipe: 'BBQ Ribs', time: '1d ago' },
+    { recipe: 'Apple Pie', time: '3d ago' }
   ];
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* Welcome Message */}
+    <div className="p-6">
+      {/* Welcome Header */}
       <div className="bg-white rounded-lg shadow p-6 mb-8">
-        <div className="flex items-center space-x-4">
-          <div className="w-12 h-12">
-            <ChefFreddieLogo />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Welcome back, {user?.name || 'paddyadukonis'}!</h1>
-            <p className="text-gray-600">
-              I notice you haven't created any recipes yet. Would you like to start by telling me what's in your kitchen?
-            </p>
-            <p className="text-gray-600">
-              I see you have 4 saved recipes in your cookbook.
-            </p>
-          </div>
-        </div>
-      </div>
-
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        {quickActions.map((action) => (
-          <Link
-            key={action.name}
-            to={action.link}
-            className="block bg-white rounded-lg shadow overflow-hidden hover:shadow-lg transition-shadow"
-          >
-            <div className={`${action.bgColor} p-4`}>
-              <span className="text-2xl">{action.icon}</span>
-            </div>
-            <div className="p-4">
-              <h3 className="text-lg font-semibold text-gray-900">{action.name}</h3>
-              <p className="text-sm text-gray-600">{action.description}</p>
-              {action.name === 'The Grange Marketplace' && (
-                <span className="text-sm text-green-600">New! →</span>
-              )}
-            </div>
-          </Link>
-        ))}
+        <h1 className="text-2xl font-bold text-gray-900">
+          Welcome back, {userName}!
+        </h1>
+        <p className="text-gray-600 mt-2">
+          What would you like to cook today?
+        </p>
       </div>
 
       {/* Stats */}
@@ -104,23 +56,32 @@ const Dashboard: React.FC = () => {
         {stats.map((stat) => (
           <div key={stat.name} className="bg-white rounded-lg shadow p-6">
             <h4 className="text-sm font-medium text-gray-500">{stat.name}</h4>
-            <p className="mt-2 text-3xl font-semibold text-gray-900">{stat.value}</p>
+            <p className="mt-2 text-3xl font-semibold text-gray-900">
+              {stat.value}
+            </p>
           </div>
         ))}
       </div>
 
-      {/* Recent Activity */}
+      {/* Recipe List */}
       <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
-        <div className="space-y-4">
-          {recentActivity.map((activity, index) => (
-            <div key={index} className="flex items-center space-x-2">
-              <span className="text-yellow-400">⭐</span>
-              <span className="text-gray-600">Favorited {activity.recipe}</span>
-              <span className="text-gray-400">{activity.time}</span>
-            </div>
-          ))}
-        </div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">
+          Your Saved Recipes
+        </h3>
+        {savedRecipes.length > 0 ? (
+          <div className="space-y-4">
+            {savedRecipes.map((recipe) => (
+              <div key={recipe.id} className="flex items-center space-x-4 p-4 border rounded-lg">
+                <div className="flex-1">
+                  <h4 className="font-medium text-gray-900">{recipe.title}</h4>
+                  <p className="text-sm text-gray-600">{recipe.description}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-gray-600">You haven't saved any recipes yet.</p>
+        )}
       </div>
     </div>
   );

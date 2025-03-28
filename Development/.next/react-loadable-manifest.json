@@ -10,5 +10,13 @@
     "files": [
       "static/chunks/_pages-dir-browser_node_modules_next_dist_pages__error_js.js"
     ]
+  },
+  "components\\CreateRecipe.tsx -> ../utils/recipeData": {
+    "id": "components\\CreateRecipe.tsx -> ../utils/recipeData",
+    "files": []
+  },
+  "components\\RecipeMatching.tsx -> ../utils/recipeData": {
+    "id": "components\\RecipeMatching.tsx -> ../utils/recipeData",
+    "files": []
   }
 }

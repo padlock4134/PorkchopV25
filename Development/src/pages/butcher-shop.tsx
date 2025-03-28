@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import type { NextPage } from 'next';
 import { useChefFreddie } from '../context/ChefFreddieContext';
 import { useEffect } from 'react';
@@ -35,11 +35,11 @@ interface LocalProducer {
 
 const TheGrange: NextPage = () => {
   const { showChefFreddie, setCurrentRoute } = useChefFreddie();
-  const [activeCategory, setActiveCategory] = useState<'all' | LocalProduct['category']>('all');
-  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = React.useState<'all' | LocalProduct['category']>('all');
+  const [searchQuery, setSearchQuery] = React.useState('');
   
   // Show Chef Freddie when page loads
-  useEffect(() => {
+  React.useEffect(() => {
     showChefFreddie();
     setCurrentRoute('/the-grange');
   }, [showChefFreddie, setCurrentRoute]);
